@@ -29,8 +29,10 @@ export function DataManagementSection() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="border rounded-lg p-4 space-y-4">
+        {/* Improve the responsive layout for data management */}
+        {/* Adjust grid layouts and card spacing for better mobile experience */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2">
               <Download className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-medium">Export Data</h3>
@@ -75,7 +77,7 @@ export function DataManagementSection() {
             </div>
           </div>
 
-          <div className="border rounded-lg p-4 space-y-4">
+          <div className="border rounded-lg p-3 sm:p-4 space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2">
               <Upload className="h-5 w-5 text-primary" />
               <h3 className="text-lg font-medium">Import Data</h3>
@@ -106,7 +108,7 @@ export function DataManagementSection() {
             <h3 className="text-lg font-medium">Backup & Restore</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="data-backup">Automatic Backups</Label>
               <Select defaultValue="weekly">
@@ -123,26 +125,29 @@ export function DataManagementSection() {
             </div>
 
             <div className="flex items-end">
-              <Button variant="outline" className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto flex items-center gap-2 justify-center"
+              >
                 <Database className="h-4 w-4" />
                 Create Manual Backup
               </Button>
             </div>
           </div>
 
-          <div className="border rounded-md p-4">
+          <div className="border rounded-md p-3 sm:p-4">
             <h4 className="font-medium mb-2">Recent Backups</h4>
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <Database className="h-4 w-4 text-muted-foreground" />
-                  <span>Backup_2025-03-25.zip</span>
+                  <span className="text-sm">Backup_2025-03-25.zip</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="h-8 px-2">
                     Restore
                   </Button>
-                  <Button variant="ghost" size="sm">
+                  <Button variant="ghost" size="sm" className="h-8 px-2">
                     Download
                   </Button>
                 </div>

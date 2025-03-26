@@ -58,28 +58,27 @@ export function RecentTransactions() {
                         <ArrowDownIcon className="h-5 w-5 text-rose-500" />
                       )}
                     </div>
-                    <div>
+                    <div className="flex flex-col items-start">
                       <p className="text-sm font-medium">
                         {transaction.description}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(transaction.date)}
-                      </p>
+                      <Badge
+                        variant={
+                          transaction.type === "income"
+                            ? "outline"
+                            : "secondary"
+                        }
+                        className={`mt-1 ${
+                          transaction.type === "income"
+                            ? "text-emerald-500 border-emerald-200"
+                            : "text-rose-500"
+                        }`}
+                      >
+                        {transaction.category}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 ">
-                    <Badge
-                      variant={
-                        transaction.type === "income" ? "outline" : "secondary"
-                      }
-                      className={
-                        transaction.type === "income"
-                          ? "text-emerald-500 border-emerald-200"
-                          : "text-rose-500"
-                      }
-                    >
-                      {transaction.category}
-                    </Badge>
+                  <div className="flex flex-col items-end">
                     <span
                       className={`font-medium ${
                         transaction.type === "income"
@@ -90,6 +89,9 @@ export function RecentTransactions() {
                       {transaction.type === "income" ? "+" : "-"}
                       {formatCurrency(transaction.amount)}
                     </span>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatDate(transaction.date)}
+                    </p>
                   </div>
                 </div>
               ))}

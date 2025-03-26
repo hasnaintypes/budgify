@@ -165,7 +165,7 @@ export function ColorPicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-3" align="start">
-        <div className="grid grid-cols-8 gap-2 mb-3">
+        <div className="grid grid-cols-6 sm:grid-cols-8 gap-2 mb-3">
           {colorPalette.map((color) => (
             <Button
               key={color}
@@ -183,8 +183,8 @@ export function ColorPicker({
             </Button>
           ))}
         </div>
-        <div className="flex items-center gap-2 mt-3">
-          <div className="flex-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mt-3">
+          <div className="flex-1 w-full">
             <Input
               ref={inputRef}
               type="text"
@@ -195,13 +195,15 @@ export function ColorPicker({
               className="h-8"
             />
           </div>
-          <div
-            className="h-8 w-8 rounded-md border"
-            style={{ backgroundColor: customColor }}
-          />
-          <Button size="sm" onClick={handleCustomColorSubmit} className="h-8">
-            Apply
-          </Button>
+          <div className="flex items-center gap-2">
+            <div
+              className="h-8 w-8 rounded-md border"
+              style={{ backgroundColor: customColor }}
+            />
+            <Button size="sm" onClick={handleCustomColorSubmit} className="h-8">
+              Apply
+            </Button>
+          </div>
         </div>
       </PopoverContent>
     </Popover>

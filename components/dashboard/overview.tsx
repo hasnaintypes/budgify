@@ -30,10 +30,10 @@ export function Overview() {
       </div>
 
       <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-        <Card className="shadow-sm">
+        <Card className="shadow-sm overflow-hidden border-l-4 border-l-primary">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Balance</CardTitle>
-            <DollarSignIcon className="h-4 w-4 text-muted-foreground" />
+            <DollarSignIcon className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             {isLoading ? (
@@ -43,13 +43,13 @@ export function Overview() {
                 ${data?.total.toFixed(2)}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               +20.1% from last month
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
+        <Card className="shadow-sm overflow-hidden border-l-4 border-l-emerald-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Income</CardTitle>
             <ArrowUpIcon className="h-4 w-4 text-emerald-500" />
@@ -58,17 +58,17 @@ export function Overview() {
             {isLoading ? (
               <Skeleton className="h-8 w-[120px]" />
             ) : (
-              <div className="text-2xl font-bold text-emerald-500">
+              <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                 ${data?.income.toFixed(2)}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               +10.5% from last month
             </p>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
+        <Card className="shadow-sm overflow-hidden border-l-4 border-l-rose-500">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Expenses</CardTitle>
             <ArrowDownIcon className="h-4 w-4 text-rose-500" />
@@ -77,11 +77,11 @@ export function Overview() {
             {isLoading ? (
               <Skeleton className="h-8 w-[120px]" />
             ) : (
-              <div className="text-2xl font-bold text-rose-500">
+              <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">
                 ${data?.expenses.toFixed(2)}
               </div>
             )}
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mt-1">
               +12.3% from last month
             </p>
           </CardContent>

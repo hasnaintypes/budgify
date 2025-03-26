@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 
-export default function SettingsSection() {
+export function SettingsSection() {
   return (
     <Card>
       <CardHeader>
@@ -63,7 +63,9 @@ export default function SettingsSection() {
               </SelectContent>
             </Select>
           </div>
+        </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="startOfWeek">Start of Week</Label>
             <Select defaultValue="sunday">
@@ -102,7 +104,7 @@ export default function SettingsSection() {
           <h3 className="text-lg font-medium">Display Settings</h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="space-y-0.5">
                 <Label htmlFor="compact-view">Compact View</Label>
                 <p className="text-sm text-muted-foreground">
@@ -112,7 +114,7 @@ export default function SettingsSection() {
               <Switch id="compact-view" />
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div className="space-y-0.5">
                 <Label htmlFor="show-cents">Show Cents</Label>
                 <p className="text-sm text-muted-foreground">

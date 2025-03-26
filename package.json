@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.25.3",
     "@clerk/nextjs": "^6.12.10",
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
@@ -28,6 +29,7 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "convex": "^1.21.0",
     "date-fns": "^3.6.0",
     "emoji-mart": "^5.6.0",
     "lucide-react": "^0.483.0",

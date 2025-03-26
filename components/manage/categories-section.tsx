@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, Pencil, Trash2 } from "lucide-react";
+import { PlusIcon, Pencil, Trash2, LucideIcon } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { useCategories, type Category } from "@/hooks/use-categories";
 import { IconPicker } from "@/components/ui/icon-picker";
@@ -24,6 +24,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +50,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type IconName = keyof typeof LucideIcons;
 
@@ -61,6 +70,7 @@ export function CategoriesSection() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Filter categories by type
   const incomeCategories =
@@ -119,8 +129,69 @@ export function CategoriesSection() {
   };
 
   const renderCategoryIcon = (iconName: string) => {
-    const IconComponent = LucideIcons[iconName as IconName];
+    const IconComponent = LucideIcons[iconName as IconName] as LucideIcon;
     return IconComponent ? <IconComponent className="h-5 w-5" /> : null;
+  };
+
+  // Form content for both dialog and sheet
+  const CategoryForm = ({ isEdit = false }: { isEdit?: boolean }) => {
+    const category = isEdit ? editCategory : newCategory;
+    const setCategory = isEdit
+      ? (value: Partial<Category>) =>
+          setEditCategory({ ...editCategory!, ...value })
+      : (value: Partial<Category>) =>
+          setNewCategory({ ...newCategory, ...value });
+
+    return (
+      <div className="grid gap-4 py-4">
+        <div className="grid gap-2">
+          <Label htmlFor={isEdit ? "editCategoryName" : "categoryName"}>
+            Category Name
+          </Label>
+          <Input
+            id={isEdit ? "editCategoryName" : "categoryName"}
+            placeholder="e.g., Groceries"
+            value={category?.name || ""}
+            onChange={(e) => setCategory({ name: e.target.value })}
+          />
+        </div>
+        {!isEdit && (
+          <div className="grid gap-2">
+            <Label htmlFor="categoryType">Category Type</Label>
+            <Select
+              value={category?.type}
+              onValueChange={(value) =>
+                setCategory({ type: value as "income" | "expense" })
+              }
+            >
+              <SelectTrigger id="categoryType">
+                <SelectValue placeholder="Select type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="income">Income</SelectItem>
+                <SelectItem value="expense">Expense</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Icon</Label>
+            <IconPicker
+              selectedIcon={(category?.icon as IconName) || "CircleDollarSign"}
+              onIconSelect={(icon) => setCategory({ icon })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Color</Label>
+            <ColorPicker
+              selectedColor={category?.color || "#10b981"}
+              onColorSelect={(color) => setCategory({ color })}
+            />
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -142,6 +213,7 @@ export function CategoriesSection() {
               });
               setCreateDialogOpen(true);
             }}
+            className="w-full sm:w-auto"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
             Add Category
@@ -162,18 +234,20 @@ export function CategoriesSection() {
               {incomeCategories.map((category) => (
                 <div
                   key={category.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                  className="flex items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
                     <div
-                      className="flex h-12 w-12 items-center justify-center rounded-full text-white"
+                      className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-full text-white"
                       style={{ backgroundColor: category.color }}
                     >
                       {renderCategoryIcon(category.icon)}
                     </div>
-                    <span className="font-medium">{category.name}</span>
+                    <span className="font-medium truncate">
+                      {category.name}
+                    </span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -240,6 +314,7 @@ export function CategoriesSection() {
               });
               setCreateDialogOpen(true);
             }}
+            className="w-full sm:w-auto"
           >
             <PlusIcon className="h-4 w-4 mr-2" />
             Add Category
@@ -260,18 +335,20 @@ export function CategoriesSection() {
               {expenseCategories.map((category) => (
                 <div
                   key={category.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors"
+                  className="flex items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
                     <div
-                      className="flex h-12 w-12 items-center justify-center rounded-full text-white"
+                      className="flex h-10 w-10 sm:h-12 sm:w-12 flex-shrink-0 items-center justify-center rounded-full text-white"
                       style={{ backgroundColor: category.color }}
                     >
                       {renderCategoryIcon(category.icon)}
                     </div>
-                    <span className="font-medium">{category.name}</span>
+                    <span className="font-medium truncate">
+                      {category.name}
+                    </span>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -321,133 +398,107 @@ export function CategoriesSection() {
         </CardContent>
       </Card>
 
-      {/* Create Category Dialog */}
-      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Create New Category</DialogTitle>
-            <DialogDescription>
-              Add a new {newCategory.type === "income" ? "income" : "expense"}{" "}
-              category to organize your transactions.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="categoryName">Category Name</Label>
-              <Input
-                id="categoryName"
-                placeholder="e.g., Groceries"
-                value={newCategory.name}
-                onChange={(e) =>
-                  setNewCategory({ ...newCategory, name: e.target.value })
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="categoryType">Category Type</Label>
-              <Select
-                value={newCategory.type}
-                onValueChange={(value) =>
-                  setNewCategory({
-                    ...newCategory,
-                    type: value as "income" | "expense",
-                  })
-                }
+      {/* Create Category - Dialog for desktop, Sheet for mobile */}
+      {isMobile ? (
+        <Sheet open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <SheetContent side="bottom" className="h-[90vh] sm:max-w-none">
+            <SheetHeader className="mb-4">
+              <SheetTitle>Create New Category</SheetTitle>
+              <SheetDescription>
+                Add a new {newCategory.type === "income" ? "income" : "expense"}{" "}
+                category to organize your transactions.
+              </SheetDescription>
+            </SheetHeader>
+            <CategoryForm />
+            <SheetFooter className="mt-6 flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setCreateDialogOpen(false)}
+                className="flex-1"
               >
-                <SelectTrigger id="categoryType">
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="income">Income</SelectItem>
-                  <SelectItem value="expense">Expense</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Icon</Label>
-                <IconPicker
-                  selectedIcon={newCategory.icon as IconName}
-                  onIconSelect={(icon) =>
-                    setNewCategory({ ...newCategory, icon })
-                  }
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Color</Label>
-                <ColorPicker
-                  selectedColor={newCategory.color || "#10b981"}
-                  onColorSelect={(color) =>
-                    setNewCategory({ ...newCategory, color })
-                  }
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setCreateDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleCreateCategory}>Create</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                Cancel
+              </Button>
+              <Button onClick={handleCreateCategory} className="flex-1">
+                Create
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Create New Category</DialogTitle>
+              <DialogDescription>
+                Add a new {newCategory.type === "income" ? "income" : "expense"}{" "}
+                category to organize your transactions.
+              </DialogDescription>
+            </DialogHeader>
+            <CategoryForm />
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setCreateDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleCreateCategory}>Create</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
-      {/* Edit Category Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Edit Category</DialogTitle>
-            <DialogDescription>
-              Update the details of your{" "}
-              {editCategory?.type === "income" ? "income" : "expense"} category.
-            </DialogDescription>
-          </DialogHeader>
-          {editCategory && (
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="editCategoryName">Category Name</Label>
-                <Input
-                  id="editCategoryName"
-                  value={editCategory.name}
-                  onChange={(e) =>
-                    setEditCategory({ ...editCategory, name: e.target.value })
-                  }
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Icon</Label>
-                  <IconPicker
-                    selectedIcon={editCategory.icon as IconName}
-                    onIconSelect={(icon) =>
-                      setEditCategory({ ...editCategory, icon })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Color</Label>
-                  <ColorPicker
-                    selectedColor={editCategory.color}
-                    onColorSelect={(color) =>
-                      setEditCategory({ ...editCategory, color })
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditCategory}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Edit Category - Dialog for desktop, Sheet for mobile */}
+      {isMobile ? (
+        <Sheet open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <SheetContent side="bottom" className="h-[90vh] sm:max-w-none">
+            <SheetHeader className="mb-4">
+              <SheetTitle>Edit Category</SheetTitle>
+              <SheetDescription>
+                Update the details of your{" "}
+                {editCategory?.type === "income" ? "income" : "expense"}{" "}
+                category.
+              </SheetDescription>
+            </SheetHeader>
+            {editCategory && <CategoryForm isEdit />}
+            <SheetFooter className="mt-6 flex-row gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleEditCategory} className="flex-1">
+                Save Changes
+              </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Category</DialogTitle>
+              <DialogDescription>
+                Update the details of your{" "}
+                {editCategory?.type === "income" ? "income" : "expense"}{" "}
+                category.
+              </DialogDescription>
+            </DialogHeader>
+            {editCategory && <CategoryForm isEdit />}
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleEditCategory}>Save Changes</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Delete Category Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

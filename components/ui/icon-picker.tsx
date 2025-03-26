@@ -45,7 +45,7 @@ const commonIcons: IconName[] = [
   "Gift",
   "Tag",
   "Truck",
-  "Basket",
+  "ShoppingBasket",
   "Ticket",
 
   // Food & Dining
@@ -66,7 +66,6 @@ const commonIcons: IconName[] = [
   "Train",
   "Plane",
   "Bike",
-  "Taxi",
   "Fuel",
   "Navigation",
   "MapPin",
@@ -87,11 +86,9 @@ const commonIcons: IconName[] = [
   // Health & Wellness
   "Stethoscope",
   "Pill",
-  "FirstAid",
   "Heart",
   "Activity",
   "Dumbbell",
-  "Yoga",
   "Bath",
   "Scissors",
 
@@ -121,7 +118,6 @@ const commonIcons: IconName[] = [
   "Calendar",
   "Clock",
   "Timer",
-  "Alarm",
   "CalendarDays",
   "CalendarClock",
 
@@ -130,7 +126,6 @@ const commonIcons: IconName[] = [
   "User",
   "UserPlus",
   "Baby",
-  "Family",
   "Heart",
 
   // Misc & UI
@@ -178,7 +173,8 @@ export function IconPicker({
 
   // Get the selected icon component
   const SelectedIcon =
-    LucideIcons[selectedIcon] || LucideIcons.CircleDollarSign;
+    (LucideIcons[selectedIcon] as LucideIcons.LucideIcon) ||
+    LucideIcons.CircleDollarSign;
 
   return (
     <Popover>
@@ -207,13 +203,13 @@ export function IconPicker({
           </div>
         </div>
         <ScrollArea className="h-[300px]">
-          <div className="grid grid-cols-5 gap-2 p-2">
+          <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 p-2">
             {filteredIcons.length > 0 ? (
               filteredIcons.map((name) => {
                 // Check if the icon exists in LucideIcons
                 if (!LucideIcons[name]) return null;
 
-                const Icon = LucideIcons[name];
+                const Icon = LucideIcons[name] as LucideIcons.LucideIcon;
                 return (
                   <Button
                     key={name}
@@ -236,7 +232,7 @@ export function IconPicker({
                 );
               })
             ) : (
-              <div className="col-span-5 flex h-32 items-center justify-center text-sm text-muted-foreground">
+              <div className="col-span-4 sm:col-span-5 flex h-32 items-center justify-center text-sm text-muted-foreground">
                 No icons found
               </div>
             )}

@@ -3,7 +3,7 @@ import "@/app/globals.css";
 import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { cn } from "@/lib/utils";
-
+import { ConvexClientProvider } from "./ConvexClientProvider";
 import { ClerkProvider } from "@clerk/nextjs";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
@@ -11,7 +11,6 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 export const metadata = {
   title: "Budgify - Expense Tracker",
   description: "Track your expenses and manage your budget with Budgify",
-  generator: "v0.dev",
 };
 
 export default function RootLayout({
@@ -20,7 +19,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
       <html lang="en" suppressHydrationWarning>
         <body
           className={cn(
@@ -34,11 +32,10 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <ConvexClientProvider>{children}</ConvexClientProvider>
           </ThemeProvider>
         </body>
       </html>
-    </ClerkProvider>
   );
 }
 
