@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { transactions } from "@/data/transactions";
+import { useTransactions } from "@/hooks/use-transactions";
+import { useUser } from "@clerk/nextjs";
 
 interface TransactionBarChartProps {
   dateRange: {
@@ -43,8 +44,14 @@ const chartConfig = {
 
 export function TransactionBarChart({ dateRange }: TransactionBarChartProps) {
   const [timeRange, setTimeRange] = React.useState("90d");
+  const { user } = useUser();
+  const { data: transactions, isLoading } = useTransactions({
+    clerkId: user?.id || "",
+  });
 
   const processTransactions = () => {
+    if (!transactions || isLoading) return [];
+
     try {
       const transactionMap = new Map();
 
@@ -53,14 +60,15 @@ export function TransactionBarChart({ dateRange }: TransactionBarChartProps) {
           try {
             const transactionDate = new Date(transaction.date);
             return (
-              transactionDate >= dateRange.from && transactionDate <= dateRange.to
+              transactionDate >= dateRange.from &&
+              transactionDate <= dateRange.to
             );
           } catch (error) {
             return false;
           }
         })
         .forEach((transaction) => {
-          const date = transaction.date;
+          const date = new Date(transaction.date).toISOString().split("T")[0];
           if (!transactionMap.has(date)) {
             transactionMap.set(date, { date, income: 0, expense: 0 });
           }
@@ -74,7 +82,7 @@ export function TransactionBarChart({ dateRange }: TransactionBarChartProps) {
 
       return Array.from(transactionMap.values())
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-        .filter(data => {
+        .filter((data) => {
           const date = new Date(data.date);
           const referenceDate = new Date(dateRange.to);
           let daysToSubtract = 90;
@@ -93,6 +101,20 @@ export function TransactionBarChart({ dateRange }: TransactionBarChartProps) {
   };
 
   const chartData = processTransactions();
+
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+          <div className="grid flex-1 gap-1 text-center sm:text-left">
+            <CardTitle>Income vs Expense</CardTitle>
+            <CardDescription>Loading...</CardDescription>
+          </div>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   return (
     <Card>

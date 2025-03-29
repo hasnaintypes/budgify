@@ -1,11 +1,14 @@
 "use client";
 
-import type React from "react";
-
+import React from "react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { PlusIcon, CalendarIcon, Upload, MapPin } from "lucide-react";
+import * as Icons from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import { useConvexAuth } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import {
   Sheet,
   SheetContent,
@@ -25,8 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCategories } from "@/hooks/use-categories";
-import { EmojiPicker } from "@/components/ui/emoji-picker";
+import { useCategories, type IconName } from "@/hooks/use-categories";
 import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
@@ -44,18 +46,127 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/hooks/use-toast";
 
 export function TransactionSheet() {
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
-  const [newCategory, setNewCategory] = useState({ name: "", emoji: "💰" });
+  const [newCategory, setNewCategory] = useState({
+    name: "",
+    icon: "ShoppingBag" as IconName,
+    color: "#000000",
+    type: "expense" as const,
+  });
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [location, setLocation] = useState<string | null>(null);
+  const [location, setLocation] = useState<string>("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [receipt, setReceipt] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [description, setDescription] = useState("");
+  const [amount, setAmount] = useState("");
+  const [notes, setNotes] = useState("");
+  const [accountId, setAccountId] = useState<Id<"accounts"> | null>(null);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const createTransaction = useMutation(api.transactions.createTransaction);
   const { user } = useUser();
+  const { isAuthenticated } = useConvexAuth();
+
+  // Get user ID from Clerk
+  const userDetails = useQuery(
+    api.users.getUserByClerkId,
+    user?.id ? { clerkId: user.id } : "skip"
+  );
+
+  // Get active accounts
+  const activeAccounts = useQuery(api.accounts.getActive);
+
+  // Set default account when accounts are loaded
+  useEffect(() => {
+    if (activeAccounts && activeAccounts.length > 0 && !accountId) {
+      setAccountId(activeAccounts[0]._id);
+    }
+  }, [activeAccounts, accountId]);
+
+  const handleCreateTransaction = async () => {
+    if (!amount || !selectedCategory || !userDetails) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!accountId) {
+      toast({
+        title: "No active account",
+        description: "Please create an account first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Convert date to timestamp (milliseconds since epoch)
+      const dateTimestamp = date ? date.getTime() : new Date().getTime();
+
+      // Handle receipt upload if needed
+      let receiptUrl = undefined;
+      if (receipt) {
+        // Here you would implement file upload logic
+        // For now, we'll just use a placeholder
+        receiptUrl = "receipt-placeholder";
+      }
+
+      await createTransaction({
+        description,
+        amount: Number.parseFloat(amount),
+        type: transactionType,
+        categoryId: selectedCategory,
+        accountId,
+        userId: userDetails._id,
+        paymentMethod:
+          (paymentMethod as
+            | "CASH"
+            | "CREDIT_CARD"
+            | "DEBIT_CARD"
+            | "BANK_TRANSFER"
+            | "MOBILE_PAYMENT"
+            | "OTHER") || "OTHER",
+        date: dateTimestamp,
+        location: location || undefined,
+        notes: notes || undefined,
+        receipt: receiptUrl,
+      });
+
+      // Reset form
+      setDescription("");
+      setAmount("");
+      setSelectedCategory(null);
+      setPaymentMethod(null);
+      setDate(new Date());
+      setLocation("");
+      setNotes("");
+      setReceipt(null);
+      setIsRecurring(false);
+      setFrequency(null);
+
+      toast({
+        title: "Transaction created",
+        description: "Your transaction has been saved successfully",
+      });
+
+      setOpen(false);
+    } catch (error) {
+      console.error("Error creating transaction:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create transaction. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const {
     categories,
@@ -63,17 +174,13 @@ export function TransactionSheet() {
     addCategory,
   } = useCategories();
 
-  const handleCreateCategory = () => {
-    if (newCategory.name.trim()) {
-      // addCategory({
-      //   id: `cat-${Date.now()}`,
-      //   name: newCategory.name,
-      //   emoji: newCategory.emoji,
-      // });
-      setNewCategory({ name: "", emoji: "💰" });
-      setCategoryDialogOpen(false);
-    }
-  };
+  const [transactionType, setTransactionType] = useState<"income" | "expense">(
+    "expense"
+  );
+  const [selectedCategory, setSelectedCategory] =
+    useState<Id<"categories"> | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+  const [frequency, setFrequency] = useState<string | null>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -85,12 +192,21 @@ export function TransactionSheet() {
     fileInputRef.current?.click();
   };
 
+  const renderIcon = (iconName: IconName) => {
+    const IconComponent = Icons[iconName] as React.ComponentType<{
+      className?: string;
+    }>;
+    return IconComponent
+      ? React.createElement(IconComponent, { className: "mr-2 h-4 w-4" })
+      : null;
+  };
+
   return (
     <>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button className="gap-2 px-4">
-            <PlusIcon className="h-4 w-4" />
+            <Icons.Plus className="h-4 w-4" />
             Add Transaction
           </Button>
         </SheetTrigger>
@@ -108,18 +224,34 @@ export function TransactionSheet() {
             {/* Description field */}
             <div className="grid gap-2">
               <Label htmlFor="description">Description</Label>
-              <Input id="description" placeholder="Grocery shopping" />
+              <Input
+                id="description"
+                placeholder="Grocery shopping"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
             </div>
 
             {/* Amount and Type in same row */}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="amount">Amount</Label>
-                <Input id="amount" type="number" placeholder="0.00" />
+                <Input
+                  id="amount"
+                  type="number"
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="type">Type</Label>
-                <Select>
+                <Select
+                  value={transactionType}
+                  onValueChange={(value: "income" | "expense") =>
+                    setTransactionType(value)
+                  }
+                >
                   <SelectTrigger id="type">
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
@@ -131,7 +263,7 @@ export function TransactionSheet() {
               </div>
             </div>
 
-            {/* Category and Payment Method in same row */}
+            {/* Category and Account in same row */}
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="category">Category</Label>
@@ -142,19 +274,29 @@ export function TransactionSheet() {
                     </SelectTrigger>
                   </Select>
                 ) : categories && categories.length > 0 ? (
-                  <Select>
+                  <Select
+                    value={selectedCategory?.toString() || undefined}
+                    onValueChange={(value: string) =>
+                      setSelectedCategory(value as Id<"categories">)
+                    }
+                  >
                     <SelectTrigger id="category">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          <div className="flex items-center">
-                            <span className="mr-2">{category.emoji}</span>
-                            <span>{category.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {categories
+                        ?.filter(
+                          (category) => category.type === transactionType
+                        )
+                        .map((category) => (
+                          <SelectItem key={category._id} value={category._id}>
+                            <div className="flex items-center">
+                              {category.icon &&
+                                renderIcon(category.icon as IconName)}
+                              <span>{category.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                 ) : (
@@ -171,23 +313,58 @@ export function TransactionSheet() {
                 )}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="payment-method">Payment Method</Label>
-                <Select>
-                  <SelectTrigger id="payment-method">
-                    <SelectValue placeholder="Select method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CASH">Cash</SelectItem>
-                    <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
-                    <SelectItem value="DEBIT_CARD">Debit Card</SelectItem>
-                    <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
-                    <SelectItem value="MOBILE_PAYMENT">
-                      Mobile Payment
-                    </SelectItem>
-                    <SelectItem value="OTHER">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="account">Account</Label>
+                {!activeAccounts || activeAccounts.length === 0 ? (
+                  <div className="border rounded-md p-2 bg-muted/30">
+                    <p className="text-sm text-muted-foreground">
+                      No active accounts
+                    </p>
+                  </div>
+                ) : (
+                  <Select
+                    value={accountId?.toString() || undefined}
+                    onValueChange={(value: string) =>
+                      setAccountId(value as Id<"accounts">)
+                    }
+                  >
+                    <SelectTrigger id="account">
+                      <SelectValue placeholder="Select account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeAccounts.map((account) => (
+                        <SelectItem key={account._id} value={account._id}>
+                          <div className="flex items-center">
+                            {account.icon &&
+                              renderIcon(account.icon as IconName)}
+                            <span>{account.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
+            </div>
+
+            {/* Payment Method */}
+            <div className="grid gap-2">
+              <Label htmlFor="payment-method">Payment Method</Label>
+              <Select
+                value={paymentMethod || undefined}
+                onValueChange={setPaymentMethod}
+              >
+                <SelectTrigger id="payment-method">
+                  <SelectValue placeholder="Select method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CASH">Cash</SelectItem>
+                  <SelectItem value="CREDIT_CARD">Credit Card</SelectItem>
+                  <SelectItem value="DEBIT_CARD">Debit Card</SelectItem>
+                  <SelectItem value="BANK_TRANSFER">Bank Transfer</SelectItem>
+                  <SelectItem value="MOBILE_PAYMENT">Mobile Payment</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Date and Location in same row */}
@@ -203,7 +380,7 @@ export function TransactionSheet() {
                         !date && "text-muted-foreground"
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      <Icons.Calendar className="mr-2 h-4 w-4" />
                       {date ? format(date, "PP") : <span>Pick a date</span>}
                     </Button>
                   </PopoverTrigger>
@@ -223,10 +400,10 @@ export function TransactionSheet() {
                   <Input
                     id="location"
                     placeholder="Enter location"
-                    value={""}
+                    value={location}
                     onChange={(e) => setLocation(e.target.value)}
                   />
-                  <MapPin className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Icons.MapPin className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
                 </div>
               </div>
             </div>
@@ -239,6 +416,8 @@ export function TransactionSheet() {
                 placeholder="Add any additional notes here..."
                 className="resize-none"
                 rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
               />
             </div>
 
@@ -263,7 +442,7 @@ export function TransactionSheet() {
                   className="flex-1"
                   onClick={handleUploadClick}
                 >
-                  <Upload className="mr-2 h-4 w-4" />
+                  <Icons.Upload className="mr-2 h-4 w-4" />
                   {receipt ? receipt.name : "Upload Receipt"}
                 </Button>
                 <input
@@ -292,7 +471,10 @@ export function TransactionSheet() {
               {isRecurring && (
                 <div className="grid gap-2 pl-6 border-l-2 border-muted mt-2">
                   <Label htmlFor="frequency">Frequency</Label>
-                  <Select>
+                  <Select
+                    value={frequency || undefined}
+                    onValueChange={setFrequency}
+                  >
                     <SelectTrigger id="frequency">
                       <SelectValue placeholder="Select frequency" />
                     </SelectTrigger>
@@ -315,53 +497,16 @@ export function TransactionSheet() {
             >
               Cancel
             </Button>
-            <Button type="submit">Save Transaction</Button>
+            <Button
+              type="submit"
+              onClick={handleCreateTransaction}
+              disabled={!isAuthenticated || !userDetails}
+            >
+              Save Transaction
+            </Button>
           </SheetFooter>
         </SheetContent>
       </Sheet>
-
-      {/* Category Creation Dialog */}
-      <Dialog open={categoryDialogOpen} onOpenChange={setCategoryDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Create New Category</DialogTitle>
-            <DialogDescription>
-              Add a new category for your transactions.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="categoryName">Category Name</Label>
-              <Input
-                id="categoryName"
-                placeholder="e.g., Groceries"
-                value={newCategory.name}
-                onChange={(e) =>
-                  setNewCategory({ ...newCategory, name: e.target.value })
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label>Icon</Label>
-              <EmojiPicker
-                selectedEmoji={newCategory.emoji}
-                onEmojiSelect={(emoji) =>
-                  setNewCategory({ ...newCategory, emoji })
-                }
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setCategoryDialogOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button onClick={handleCreateCategory}>Create</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }

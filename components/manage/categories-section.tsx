@@ -51,18 +51,17 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Id } from "@/convex/_generated/dataModel";
+import { useToast } from "@/hooks/use-toast";
 
 type IconName = keyof typeof LucideIcons;
 
-export function CategoriesSection() {
+export function CategoriesSection({ userId }: { userId: Id<"users"> }) {
   const { categories, isLoading, addCategory, updateCategory, deleteCategory } =
-    useCategories();
-  const [newCategory, setNewCategory] = useState<Partial<Category>>({
-    name: "",
-    icon: "CircleDollarSign",
-    color: "#10b981",
-    type: "expense",
-  });
+    useCategories(userId);
+  const [newCategory, setNewCategory] = useState<
+    Partial<Omit<Category, "_id" | "userId">>
+  >({ name: "", icon: "CircleDollarSign", color: "#10b981", type: "expense" });
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(
     null
@@ -71,6 +70,7 @@ export function CategoriesSection() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { toast } = useToast();
 
   // Filter categories by type
   const incomeCategories =
@@ -85,36 +85,76 @@ export function CategoriesSection() {
       newCategory.color &&
       newCategory.type
     ) {
-      addCategory({
-        id: `cat-${Date.now()}`,
-        name: newCategory.name,
-        icon: newCategory.icon,
-        color: newCategory.color,
-        type: newCategory.type,
-      } as Category);
-      setNewCategory({
-        name: "",
-        icon: "CircleDollarSign",
-        color: "#10b981",
-        type: "expense",
-      });
-      setCreateDialogOpen(false);
+      try {
+        addCategory({
+          name: newCategory.name,
+          icon: newCategory.icon,
+          color: newCategory.color,
+          type: newCategory.type,
+        });
+        toast({
+          title: "Category created",
+          description: `Successfully created ${newCategory.name} category`,
+        });
+        setNewCategory({
+          name: "",
+          icon: "CircleDollarSign",
+          color: "#10b981",
+          type: "expense",
+        });
+        setCreateDialogOpen(false);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to create category. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const handleEditCategory = () => {
     if (editCategory && editCategory.name.trim()) {
-      updateCategory(editCategory.id, editCategory);
-      setEditCategory(null);
-      setEditDialogOpen(false);
+      try {
+        updateCategory(editCategory._id, {
+          name: editCategory.name,
+          icon: editCategory.icon,
+          color: editCategory.color,
+          type: editCategory.type,
+        });
+        toast({
+          title: "Category updated",
+          description: `Successfully updated ${editCategory.name} category`,
+        });
+        setEditCategory(null);
+        setEditDialogOpen(false);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to update category. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
   const handleDeleteCategory = () => {
     if (categoryToDelete) {
-      deleteCategory(categoryToDelete.id);
-      setCategoryToDelete(null);
-      setDeleteDialogOpen(false);
+      try {
+        deleteCategory(categoryToDelete._id);
+        toast({
+          title: "Category deleted",
+          description: `Successfully deleted ${categoryToDelete.name} category`,
+        });
+        setCategoryToDelete(null);
+        setDeleteDialogOpen(false);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete category. Please try again.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -233,7 +273,7 @@ export function CategoriesSection() {
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {incomeCategories.map((category) => (
                 <div
-                  key={category.id}
+                  key={category._id}
                   className="flex items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors"
                 >
                   <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">
@@ -334,7 +374,7 @@ export function CategoriesSection() {
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
               {expenseCategories.map((category) => (
                 <div
-                  key={category.id}
+                  key={category._id}
                   className="flex items-center justify-between p-3 sm:p-4 border rounded-lg hover:bg-accent/50 transition-colors"
                 >
                   <div className="flex items-center gap-2 sm:gap-3 overflow-hidden">

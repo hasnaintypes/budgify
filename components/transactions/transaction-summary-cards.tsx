@@ -1,19 +1,30 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowUpIcon, ArrowDownIcon, TrendingUpIcon, TrendingDownIcon } from "lucide-react"
-import { Skeleton } from "@/components/ui/skeleton"
-import { useTransactions } from "@/hooks/use-transactions"
-import type { DateRange } from "@/components/ui/date-range-picker"
-import { formatCurrency } from "@/lib/utils"
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  TrendingUpIcon,
+  TrendingDownIcon,
+} from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useTransactions } from "@/hooks/use-transactions";
+import type { DateRange } from "@/components/ui/date-range-picker";
+import { formatCurrency } from "@/lib/utils";
+import { useUser } from "@clerk/clerk-react";
 
 interface TransactionSummaryCardsProps {
-  dateRange: DateRange
+  dateRange: DateRange;
 }
 
-export function TransactionSummaryCards({ dateRange }: TransactionSummaryCardsProps) {
-  const { data, isLoading } = useTransactions()
+export function TransactionSummaryCards({
+  dateRange,
+}: TransactionSummaryCardsProps) {
+  const { user } = useUser();
+  const { data, isLoading } = useTransactions({
+    clerkId: user?.id as string,
+  });
   const [summary, setSummary] = useState({
     income: 0,
     expenses: 0,
@@ -22,24 +33,39 @@ export function TransactionSummaryCards({ dateRange }: TransactionSummaryCardsPr
     expenseCount: 0,
     avgIncome: 0,
     avgExpense: 0,
-  })
+  });
 
   useEffect(() => {
-    if (!data) return
+    if (!data) return;
 
     // Filter transactions by date range
     const filteredData = data.filter((transaction) => {
-      const date = new Date(transaction.date)
-      return date >= dateRange.from && date <= dateRange.to
-    })
+      const transactionDate = new Date(transaction.date);
+      const fromDate = dateRange.from ? new Date(dateRange.from) : null;
+      const toDate = dateRange.to ? new Date(dateRange.to) : null;
+
+      if (!fromDate || !toDate) return true;
+
+      // Set hours to 0 for consistent date comparison
+      transactionDate.setHours(0, 0, 0, 0);
+      fromDate.setHours(0, 0, 0, 0);
+      toDate.setHours(0, 0, 0, 0);
+
+      return transactionDate >= fromDate && transactionDate <= toDate;
+    });
 
     // Calculate summary
-    const income = filteredData.filter((t) => t.type === "income").reduce((sum, t) => sum + t.amount, 0)
+    const income = filteredData
+      .filter((t) => t.type === "income")
+      .reduce((sum, t) => sum + t.amount, 0);
+    const expenses = filteredData
+      .filter((t) => t.type === "expense")
+      .reduce((sum, t) => sum + t.amount, 0);
 
-    const expenses = filteredData.filter((t) => t.type === "expense").reduce((sum, t) => sum + t.amount, 0)
-
-    const incomeCount = filteredData.filter((t) => t.type === "income").length
-    const expenseCount = filteredData.filter((t) => t.type === "expense").length
+    const incomeCount = filteredData.filter((t) => t.type === "income").length;
+    const expenseCount = filteredData.filter(
+      (t) => t.type === "expense"
+    ).length;
 
     setSummary({
       income,
@@ -49,8 +75,8 @@ export function TransactionSummaryCards({ dateRange }: TransactionSummaryCardsPr
       expenseCount,
       avgIncome: incomeCount > 0 ? income / incomeCount : 0,
       avgExpense: expenseCount > 0 ? expenses / expenseCount : 0,
-    })
-  }, [data, dateRange])
+    });
+  }, [data, dateRange]);
 
   if (isLoading) {
     return (
@@ -67,7 +93,7 @@ export function TransactionSummaryCards({ dateRange }: TransactionSummaryCardsPr
           </Card>
         ))}
       </div>
-    )
+    );
   }
 
   return (
@@ -81,7 +107,9 @@ export function TransactionSummaryCards({ dateRange }: TransactionSummaryCardsPr
           <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
             {formatCurrency(summary.income)}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{summary.incomeCount} transactions</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {summary.incomeCount} transactions
+          </p>
         </CardContent>
       </Card>
 
@@ -91,8 +119,12 @@ export function TransactionSummaryCards({ dateRange }: TransactionSummaryCardsPr
           <ArrowDownIcon className="h-4 w-4 text-rose-500" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">{formatCurrency(summary.expenses)}</div>
-          <p className="text-xs text-muted-foreground mt-1">{summary.expenseCount} transactions</p>
+          <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">
+            {formatCurrency(summary.expenses)}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {summary.expenseCount} transactions
+          </p>
         </CardContent>
       </Card>
 
@@ -110,19 +142,25 @@ export function TransactionSummaryCards({ dateRange }: TransactionSummaryCardsPr
         <CardContent>
           <div
             className={`text-2xl font-bold ${
-              summary.balance >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"
+              summary.balance >= 0
+                ? "text-emerald-600 dark:text-emerald-400"
+                : "text-rose-600 dark:text-rose-400"
             }`}
           >
             {formatCurrency(Math.abs(summary.balance))}
             {summary.balance < 0 && " deficit"}
           </div>
-          <p className="text-xs text-muted-foreground mt-1">For selected period</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            For selected period
+          </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Average Transaction</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            Average Transaction
+          </CardTitle>
           <div className="flex -space-x-1">
             <ArrowUpIcon className="h-4 w-4 text-emerald-500" />
             <ArrowDownIcon className="h-4 w-4 text-rose-500" />
@@ -146,6 +184,5 @@ export function TransactionSummaryCards({ dateRange }: TransactionSummaryCardsPr
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
-

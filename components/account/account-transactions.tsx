@@ -1,8 +1,6 @@
 "use client";
 
-import React from "react";
 import { useState } from "react";
-import { useUser } from "@clerk/nextjs";
 import {
   Card,
   CardContent,
@@ -20,10 +18,9 @@ import {
   SearchIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  FilterIcon,
 } from "lucide-react";
 import { useTransactions } from "@/hooks/use-transactions";
-import { formatCurrency, formatDate, formatTimestamp } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -39,58 +36,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
-export function TransactionHistory() {
-  const { user } = useUser();
+export function AccountTransactions({ accountId }: { accountId: string }) {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [yearFilter, setYearFilter] = useState<string>("all");
-  const [monthFilter, setMonthFilter] = useState<string>("all");
-  const itemsPerPage = 7;
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const itemsPerPage = 5;
 
-  const { data, isLoading } = useTransactions({
-    clerkId: user?.id as string,
-  });
+  const { data, isLoading } = useTransactions();
 
-  // Generate year and month options
-  const years = data
-    ? Array.from(new Set(data.map((t) => new Date(t.date).getFullYear()))).sort(
-        (a, b) => b - a
-      )
-    : [];
-  const months = [
-    { value: "1", label: "January" },
-    { value: "2", label: "February" },
-    { value: "3", label: "March" },
-    { value: "4", label: "April" },
-    { value: "5", label: "May" },
-    { value: "6", label: "June" },
-    { value: "7", label: "July" },
-    { value: "8", label: "August" },
-    { value: "9", label: "September" },
-    { value: "10", label: "October" },
-    { value: "11", label: "November" },
-    { value: "12", label: "December" },
-  ];
+  // Filter transactions for this account
+  // In a real app, you would fetch transactions filtered by accountId from the API
+  const accountTransactions = data?.filter((t) => true); // Placeholder for account filtering
 
-  // Filter transactions
-  const filteredTransactions = data?.filter((transaction) => {
-    const matchesSearch = transaction.description
-      .toLowerCase()
-      .includes(search.toLowerCase());
+  // Apply additional filters
+  const filteredTransactions = accountTransactions?.filter((transaction) => {
+    const matchesSearch =
+      transaction.description.toLowerCase().includes(search.toLowerCase()) ||
+      transaction.category.toLowerCase().includes(search.toLowerCase());
 
-    const date = new Date(transaction.date);
-    const matchesYear =
-      yearFilter === "all" || date.getFullYear().toString() === yearFilter;
-    const matchesMonth =
-      monthFilter === "all" || (date.getMonth() + 1).toString() === monthFilter;
+    const matchesCategory =
+      categoryFilter === "all" || transaction.category === categoryFilter;
+    const matchesType = typeFilter === "all" || transaction.type === typeFilter;
 
-    return matchesSearch && matchesYear && matchesMonth;
+    return matchesSearch && matchesCategory && matchesType;
   });
 
   // Pagination
@@ -102,89 +72,45 @@ export function TransactionHistory() {
     currentPage * itemsPerPage
   );
 
-  // Reset to first page when filters change
-  React.useEffect(() => {
-    if (user) {
-      setCurrentPage(1);
-    }
-  }, [search, yearFilter, monthFilter, user]);
-
-  if (!user) {
-    return null;
-  }
-
   return (
-    <Card className="shadow-sm">
-      <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <CardTitle>Transaction History</CardTitle>
-            <CardDescription>A list of all your transactions</CardDescription>
+    <Card>
+      <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <CardTitle>Account Transactions</CardTitle>
+          <CardDescription>
+            Recent transactions for this account
+          </CardDescription>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-auto">
+            <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search transactions..."
+              className="pl-8 w-full"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <div className="relative w-full sm:w-auto">
-              <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search transactions..."
-                className="pl-8 w-full"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <FilterIcon className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[200px]">
-                <div className="p-2 space-y-2">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Year</label>
-                    <Select value={yearFilter} onValueChange={setYearFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Filter by year" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Years</SelectItem>
-                        {years.map((year) => (
-                          <SelectItem key={year} value={year.toString()}>
-                            {year}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium">Month</label>
-                    <Select value={monthFilter} onValueChange={setMonthFilter}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Filter by month" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Months</SelectItem>
-                        {months.map((month) => (
-                          <SelectItem key={month.value} value={month.value}>
-                            {month.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-[130px]">
+              <SelectValue placeholder="Filter by type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="income">Income</SelectItem>
+              <SelectItem value="expense">Expense</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent>
         {isLoading ? (
           <div className="space-y-4">
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
-            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
           </div>
         ) : paginatedTransactions && paginatedTransactions.length > 0 ? (
           <>
@@ -202,7 +128,7 @@ export function TransactionHistory() {
                 </TableHeader>
                 <TableBody>
                   {paginatedTransactions.map((transaction) => (
-                    <TableRow key={transaction._id}>
+                    <TableRow key={transaction.id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <div
@@ -221,7 +147,7 @@ export function TransactionHistory() {
                           <div>
                             <div>{transaction.description}</div>
                             <div className="sm:hidden text-xs text-muted-foreground">
-                              {formatTimestamp(transaction.date)}
+                              {formatDate(transaction.date)}
                             </div>
                           </div>
                         </div>
@@ -235,11 +161,11 @@ export function TransactionHistory() {
                               : "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300"
                           }
                         >
-                          {transaction.categoryName}
+                          {transaction.category}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
-                        {formatTimestamp(transaction.date)}
+                        {formatDate(transaction.date)}
                       </TableCell>
                       <TableCell
                         className={`text-right font-medium ${

@@ -12,10 +12,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowUpIcon, ArrowDownIcon } from "lucide-react";
 import { useTransactions } from "@/hooks/use-transactions";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatTimestamp } from "@/lib/utils";
+import { useUser } from "@clerk/clerk-react";
 
 export function RecentTransactions() {
-  const { data, isLoading } = useTransactions({ limit: 5 });
+  const { user } = useUser();
+
+  const { data, isLoading } = useTransactions({
+    limit: 5,
+    clerkId: user?.id as string,
+  });
 
   return (
     <Card className="h-[400px] shadow-sm">
@@ -41,7 +47,7 @@ export function RecentTransactions() {
             <div className="space-y-4">
               {data.map((transaction) => (
                 <div
-                  key={transaction.id}
+                  key={transaction._id}
                   className="flex items-center justify-between"
                 >
                   <div className="flex items-center gap-4">
@@ -74,7 +80,7 @@ export function RecentTransactions() {
                             : "text-rose-500"
                         }`}
                       >
-                        {transaction.category}
+                        {transaction.categoryName}
                       </Badge>
                     </div>
                   </div>
@@ -90,7 +96,7 @@ export function RecentTransactions() {
                       {formatCurrency(transaction.amount)}
                     </span>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {formatDate(transaction.date)}
+                      {formatTimestamp(transaction.date)}
                     </p>
                   </div>
                 </div>

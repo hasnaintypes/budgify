@@ -1,128 +1,71 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { useUser } from "@clerk/nextjs";
+import * as Icons from "lucide-react";
 
-// Sample categories
-const sampleCategories: Category[] = [
-  {
-    id: "cat-1",
-    name: "Food & Dining",
-    icon: "Utensils",
-    color: "#f97316",
-    type: "expense",
-  },
-  {
-    id: "cat-2",
-    name: "Transportation",
-    icon: "Car",
-    color: "#6366f1",
-    type: "expense",
-  },
-  {
-    id: "cat-3",
-    name: "Utilities",
-    icon: "Zap",
-    color: "#eab308",
-    type: "expense",
-  },
-  {
-    id: "cat-4",
-    name: "Entertainment",
-    icon: "Film",
-    color: "#8b5cf6",
-    type: "expense",
-  },
-  {
-    id: "cat-5",
-    name: "Salary",
-    icon: "Briefcase",
-    color: "#10b981",
-    type: "income",
-  },
-  {
-    id: "cat-6",
-    name: "Freelance",
-    icon: "Laptop",
-    color: "#3b82f6",
-    type: "income",
-  },
-  {
-    id: "cat-7",
-    name: "Investments",
-    icon: "TrendingUp",
-    color: "#22c55e",
-    type: "income",
-  },
-  {
-    id: "cat-8",
-    name: "Gifts",
-    icon: "Gift",
-    color: "#ec4899",
-    type: "income",
-  },
-  {
-    id: "cat-9",
-    name: "Shopping",
-    icon: "ShoppingBag",
-    color: "#a855f7",
-    type: "expense",
-  },
-  {
-    id: "cat-10",
-    name: "Healthcare",
-    icon: "Stethoscope",
-    color: "#14b8a6",
-    type: "expense",
-  },
-  {
-    id: "cat-11",
-    name: "Housing",
-    icon: "Home",
-    color: "#f43f5e",
-    type: "expense",
-  },
-];
+export type IconName = keyof typeof Icons;
 
 export type Category = {
-  id: string;
+  _id: Id<"categories">;
   name: string;
-  icon: string;
+  icon: IconName;
   color: string;
   type: "income" | "expense";
+  userId: Id<"users">;
 };
 
 export function useCategories() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const { user } = useUser();
+  const convexUser = useQuery(api.users.getUserByClerkId, {
+    clerkId: user?.id || "",
+  });
 
-  useEffect(() => {
-    // Simulate API call
-    const timer = setTimeout(() => {
-      // In a real app, you would fetch from API or localStorage
-      setCategories(sampleCategories);
-      setIsLoading(false);
-    }, 1000);
+  const categories = useQuery(
+    api.categories.getAllCategories,
+    convexUser?._id ? { userId: convexUser._id } : "skip"
+  );
 
-    return () => clearTimeout(timer);
-  }, []);
+  const addCategoryMutation = useMutation(api.categories.createCategory);
+  const updateCategoryMutation = useMutation(api.categories.updateCategory);
+  const deleteCategoryMutation = useMutation(api.categories.deleteCategory);
 
-  const addCategory = (category: Category) => {
-    setCategories((prev) => [...prev, category]);
+  const addCategory = async ({
+    name,
+    icon,
+    color,
+    type,
+  }: Omit<Category, "_id" | "userId">) => {
+    if (!convexUser?._id) return;
+
+    await addCategoryMutation({
+      name,
+      icon,
+      color,
+      type,
+      userId: convexUser._id,
+    });
   };
 
-  const updateCategory = (id: string, updates: Partial<Category>) => {
-    setCategories((prev) =>
-      prev.map((cat) => (cat.id === id ? { ...cat, ...updates } : cat))
-    );
+  const updateCategory = async (
+    categoryId: Id<"categories">,
+    updates: Partial<Omit<Category, "_id" | "userId">>
+  ) => {
+    await updateCategoryMutation({
+      categoryId,
+      ...updates,
+    });
   };
 
-  const deleteCategory = (id: string) => {
-    setCategories((prev) => prev.filter((cat) => cat.id !== id));
+  const deleteCategory = async (categoryId: Id<"categories">) => {
+    await deleteCategoryMutation({ categoryId });
   };
 
   return {
     categories,
-    isLoading,
+    isLoading: categories === undefined || !user || convexUser === undefined,
     addCategory,
     updateCategory,
     deleteCategory,

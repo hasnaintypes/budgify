@@ -6,12 +6,20 @@ import { Database, Settings, Download } from "lucide-react";
 import { CategoriesSection } from "@/components/manage/categories-section";
 import { SettingsSection } from "@/components/manage/settings-section";
 import { DataManagementSection } from "@/components/manage/data-management-section";
+import { useUser } from "@clerk/nextjs";
+import { useConvexAuth } from "convex/react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 type ActiveSection = "categories" | "settings" | "data";
 
 export default function ManageComponent() {
-  const [activeSection, setActiveSection] =
-    useState<ActiveSection>("categories");
+  const [activeSection, setActiveSection] = useState<ActiveSection>("categories");
+  const { user } = useUser();
+  const { isAuthenticated } = useConvexAuth();
+  const userDetails = useQuery(api.users.getUserByClerkId, { 
+    clerkId: user?.id ?? "" 
+  });
 
   return (
     <div className="space-y-6">
@@ -84,7 +92,7 @@ export default function ManageComponent() {
         </div>
 
         <div className="flex-1 p-6">
-          {activeSection === "categories" && <CategoriesSection />}
+          {activeSection === "categories" && isAuthenticated && userDetails && <CategoriesSection userId={userDetails._id} />}
           {activeSection === "settings" && <SettingsSection />}
           {activeSection === "data" && <DataManagementSection />}
         </div>
@@ -92,7 +100,7 @@ export default function ManageComponent() {
 
       {/* Mobile content area */}
       <div className="md:hidden">
-        {activeSection === "categories" && <CategoriesSection />}
+        {activeSection === "categories" && isAuthenticated && userDetails && <CategoriesSection userId={userDetails._id} />}
         {activeSection === "settings" && <SettingsSection />}
         {activeSection === "data" && <DataManagementSection />}
       </div>

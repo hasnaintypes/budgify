@@ -6,6 +6,10 @@ import type { DateRange } from "@/components/ui/date-range-picker";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import { useUser } from "@clerk/clerk-react";
+import { useCategoryTransactions } from "@/hooks/use-category-transactions";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 // Color palette for the pie chart moved outside component
 const incomeColors = [
@@ -15,7 +19,7 @@ const incomeColors = [
   "#34d399",
   "#6ee7b7",
   "#a7f3d0",
-  "#34d399",
+  "#15803d", // Changed from duplicate #34d399
   "#065f46",
   "#047857",
   "#0d9488",
@@ -43,7 +47,17 @@ export function TransactionPieChart({
   type,
   dateRange,
 }: TransactionPieChartProps) {
-  const { data, isLoading } = useTransactions();
+  const { user } = useUser();
+  const userData = useQuery(
+    api.users.getUserByClerkId,
+    user?.id ? { clerkId: user.id } : "skip"
+  );
+  const categories = useQuery(
+    api.categories.getAllCategories,
+    userData?._id ? { userId: userData._id } : "skip"
+  );
+  const isCategoriesLoading = !userData || categories === undefined;
+
   const [chartData, setChartData] = useState<
     Array<{ name: string; value: number; color: string }>
   >([]);
@@ -52,45 +66,51 @@ export function TransactionPieChart({
 
   const colorPalette = type === "income" ? incomeColors : expenseColors;
 
+  const allTransactions = useQuery(
+    api.transactions.getTransactionsByUser,
+    userData?._id ? { userId: userData._id } : "skip"
+  );
+
   useEffect(() => {
-    if (!data) return;
+    if (!user?.id || !dateRange.from || !dateRange.to || !categories) return;
 
-    // Filter transactions by date range and type
-    const filteredData = data.filter((transaction) => {
-      const date = new Date(transaction.date);
-      return (
-        date >= dateRange.from &&
-        date <= dateRange.to &&
-        transaction.type === type
-      );
-    });
+    // Get all category transactions data first
+    // Get all transactions first
 
-    // Group by category
-    const groupedByCategory = filteredData.reduce((acc, transaction) => {
-      if (!acc[transaction.category]) {
-        acc[transaction.category] = 0;
-      }
+    const categoryTransactionsData =
+      categories
+        ?.filter((category) => category.type === type)
+        ?.map((category) => {
+          const categoryTransactions =
+            allTransactions?.filter((t) => t.categoryId === category._id) ?? [];
+          const total = categoryTransactions.reduce(
+            (sum, t) => sum + t.amount,
+            0
+          );
 
-      acc[transaction.category] += transaction.amount;
-      return acc;
-    }, {} as Record<string, number>);
+          return {
+            name: category.name,
+            value: total,
+            color:
+              colorPalette[categories.indexOf(category) % colorPalette.length],
+          };
+        }) ?? [];
 
-    // Sort by amount (descending)
-    const sortedCategories = Object.entries(groupedByCategory)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6); // Top 6 categories
-
-    // Prepare chart data
-    setChartData(
-      sortedCategories.map(([category, amount], index) => ({
-        name: category,
-        value: amount,
-        color: colorPalette[index % colorPalette.length],
-      }))
+    // Process data
+    const processedData = categoryTransactionsData.filter(
+      (item) => item.value > 0
     );
-  }, [data, dateRange, type]); // Removed colorPalette from dependencies
 
-  if (isLoading) {
+    // Sort by amount (descending) and take top 6
+    const sortedData = processedData
+      .filter((item) => item.value > 0)
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+
+    setChartData(sortedData);
+  }, [categories, user?.id, dateRange, type, colorPalette]);
+
+  if (isCategoriesLoading) {
     return <Skeleton className="h-[250px] w-full" />;
   }
 
@@ -151,15 +171,11 @@ export function TransactionPieChart({
                     stroke={isDark ? "#1e1e2f" : "#ffffff"}
                     strokeWidth="1"
                     className="hover:opacity-80 transition-opacity cursor-pointer"
+                    role="presentation"
+                    aria-label={`${item.name}: ${formatCurrency(item.value)} (${percentage.toFixed(1)}%)`}
                   >
-                    <title className="bg-background text-foreground p-2 rounded-lg shadow-lg">
-                      {item.name}
-                      <div className="font-medium">
-                        {formatCurrency(item.value)}
-                      </div>
-                      <div className="text-muted-foreground text-sm">
-                        {percentage.toFixed(1)}% of total
-                      </div>
+                    <title>
+                      {`${item.name} - ${formatCurrency(item.value)} (${percentage.toFixed(1)}% of total)`}
                     </title>
                   </path>
                 </g>

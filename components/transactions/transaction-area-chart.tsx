@@ -1,6 +1,7 @@
 import * as React from "react";
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
-import { transactions } from "@/data/transactions";
+import { useUser } from "@clerk/clerk-react";
+import { useTransactions } from "@/hooks/use-transactions";
 import {
   Card,
   CardContent,
@@ -43,8 +44,14 @@ const chartConfig = {
 
 export function TransactionAreaChart({ dateRange }: TransactionAreaChartProps) {
   const [timeRange, setTimeRange] = React.useState("90d");
+  const { user } = useUser();
+  const { data: transactions, isLoading } = useTransactions({
+    clerkId: user?.id || "",
+  });
 
   const processTransactions = () => {
+    if (!transactions || isLoading) return [];
+
     try {
       const transactionMap = new Map();
 
@@ -94,6 +101,19 @@ export function TransactionAreaChart({ dateRange }: TransactionAreaChartProps) {
   };
 
   const chartData = processTransactions();
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+          <div className="grid flex-1 gap-1 text-center sm:text-left">
+            <CardTitle>Income vs Expense</CardTitle>
+            <CardDescription>Loading...</CardDescription>
+          </div>
+        </CardHeader>
+      </Card>
+    );
+  }
 
   return (
     <Card>

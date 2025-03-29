@@ -34,6 +34,8 @@ Budgify is a modern, feature-rich personal finance management application built 
 
 - Node.js (v18 or higher)
 - npm or yarn package manager
+- Clerk account (for authentication)
+- Convex account (for backend)
 
 ### Installation
 
@@ -50,14 +52,22 @@ npm install
 yarn install
 ```
 
-3. Start the development server:
+3. Set up environment variables:
+Create a `.env.local` file in the root directory and add the following:
+```env
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
+CLERK_SECRET_KEY=your_clerk_secret_key
+NEXT_PUBLIC_CONVEX_URL=your_convex_deployment_url
+```
+
+4. Start the development server:
 ```bash
 npm run dev
 # or
 yarn dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
 ## Usage
 
@@ -69,6 +79,8 @@ yarn dev
 ## Tech Stack
 
 - [Next.js](https://nextjs.org) - React framework
+- [Clerk](https://clerk.com) - Authentication and user management
+- [Convex](https://convex.dev) - Backend and real-time database
 - [Tailwind CSS](https://tailwindcss.com) - Styling
 - [Recharts](https://recharts.org) - Data visualization
 - [TypeScript](https://www.typescriptlang.org) - Type safety

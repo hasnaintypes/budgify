@@ -1,37 +1,58 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { transactions } from "@/data/transactions"
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 
-export function useTransactions({ limit }: { limit?: number } = {}) {
-  const [isLoading, setIsLoading] = useState(true)
-  const [data, setData] = useState<typeof transactions | null>(null)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
+export function useTransactions({
+  limit,
+  clerkId,
+}: {
+  limit?: number;
+  clerkId: string;
+}) {
+  const user = useQuery(api.users.getUserByClerkId, { clerkId });
+  const transactions = useQuery(api.transactions.getTransactionsByUser, 
+    user ? { userId: user._id } : "skip"
+  );
+  const isLoading =
+    (clerkId && user === undefined) || transactions === undefined;
 
-  useEffect(() => {
-    // Simulate API call
-    timerRef.current = setTimeout(() => {
-      let result = [...transactions]
+  let data = transactions;
 
-      // Sort by date (newest first)
-      result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  if (data && limit) {
+    // Sort by date (newest first) and apply limit
+    data = [...data].sort((a, b) => b.date - a.date).slice(0, limit);
+  }
 
-      // Apply limit if provided
-      if (limit) {
-        result = result.slice(0, limit)
-      }
-
-      setData(result)
-      setIsLoading(false)
-    }, 1000)
-
-    return () => {
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-      }
-    }
-  }, [limit])
-
-  return { data, isLoading }
+  return { data, isLoading };
 }
 
+export function useTransactionsByCategory({
+  clerkId,
+  categoryId,
+  limit,
+}: {
+  clerkId: string;
+  categoryId: Id<"categories">;
+  limit?: number;
+}) {
+  const user = clerkId
+    ? useQuery(api.users.getUserByClerkId, { clerkId })
+    : null;
+  const transactions = useQuery(
+    api.transactions.getTransactionsByUserAndCategory,
+    user && categoryId ? { userId: user._id, categoryId } : "skip"
+  );
+  const isLoading =
+    (clerkId && user === undefined) || transactions === undefined;
+
+  let data = transactions;
+
+  if (data && limit) {
+    // Sort by date (newest first) and apply limit
+    data = [...data].sort((a, b) => b.date - a.date).slice(0, limit);
+  }
+
+  return { data, isLoading };
+}
