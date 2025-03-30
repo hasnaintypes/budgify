@@ -137,4 +137,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 Your Name - [@nainee99](https://twitter.com/nainee99) - naine909@gmail.com
 
-Project Link: [https://github.com/yourusername/budgify](https://github.com/nainee99/budgify)
+Project Link: [https://github.com/Nainee99/budgify](https://github.com/Nainee99/budgify)
