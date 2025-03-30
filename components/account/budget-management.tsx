@@ -44,10 +44,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Id } from "@/convex/_generated/dataModel";
+import { useToast } from "@/hooks/use-toast";
 
 type IconName = keyof typeof LucideIcons;
 
 export function BudgetManagement({ accountId }: { accountId: string }) {
+  const { toast } = useToast();
   const {
     currentBudget,
     isLoading,
@@ -106,81 +108,157 @@ export function BudgetManagement({ accountId }: { accountId: string }) {
   }
 
   const handleCreateBudget = async () => {
-    if (!accountId) return;
+    if (!accountId) {
+      toast({
+        title: "Error",
+        description: "No account selected",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    await addBudget({
-      month: newBudget.month,
-      accountId: accountId as Id<"accounts">,
-      totalBudgeted: 0, // Start with 0, will be updated as categories are added
-      totalSpent: 0,
-    });
+    try {
+      await addBudget({
+        month: newBudget.month,
+        accountId: accountId as Id<"accounts">,
+        totalBudgeted: 0,
+        totalSpent: 0,
+      });
 
-    setIsCreateBudgetOpen(false);
+      toast({
+        title: "Budget created",
+        description: `Budget for ${newBudget.month} has been created`,
+      });
+      setIsCreateBudgetOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create budget. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleAddCategory = async () => {
-    if (
-      !currentBudget ||
-      !newBudgetCategory.categoryId ||
-      newBudgetCategory.budgeted <= 0
-    )
+    if (!newBudgetCategory.categoryId || newBudgetCategory.budgeted <= 0) {
+      toast({
+        title: "Missing information",
+        description: "Please select a category and enter a valid budget amount",
+        variant: "destructive",
+      });
       return;
+    }
+
+    if (!currentBudget) return;
 
     const selectedCat = categories?.find(
       (c) => c._id === newBudgetCategory.categoryId
     );
     if (!selectedCat) return;
 
-    await addBudgetCategory(currentBudget._id, {
-      name: selectedCat.name,
-      categoryId: selectedCat._id,
-      categoryName: selectedCat.name,
-      budgeted: newBudgetCategory.budgeted,
-      spent: 0,
-      accountId: accountId as Id<"accounts">,
-      color: selectedCat.color,
-      icon: selectedCat.icon,
-    });
+    try {
+      await addBudgetCategory(currentBudget._id, {
+        name: selectedCat.name,
+        categoryId: selectedCat._id,
+        categoryName: selectedCat.name,
+        budgeted: newBudgetCategory.budgeted,
+        spent: 0,
+        accountId: accountId as Id<"accounts">,
+        color: selectedCat.color,
+        icon: selectedCat.icon,
+      });
 
-    // Reset form and close dialog
-    setNewBudgetCategory({
-      categoryId: "",
-      budgeted: 0,
-    });
-    setIsAddCategoryOpen(false);
+      toast({
+        title: "Category added",
+        description: `${selectedCat.name} has been added to your budget`,
+      });
+
+      setNewBudgetCategory({
+        categoryId: "",
+        budgeted: 0,
+      });
+      setIsAddCategoryOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add category. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEditCategory = async () => {
     if (!currentBudget || !selectedCategory) return;
 
-    await updateBudgetCategory(currentBudget._id, selectedCategory._id, {
-      budgeted: selectedCategory.budgeted,
-    });
+    try {
+      await updateBudgetCategory(currentBudget._id, selectedCategory._id, {
+        budgeted: selectedCategory.budgeted,
+      });
 
-    setSelectedCategory(null);
-    setIsEditCategoryOpen(false);
+      toast({
+        title: "Category updated",
+        description: `${selectedCategory.name} budget has been updated`,
+      });
+
+      setSelectedCategory(null);
+      setIsEditCategoryOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update category. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteCategory = async () => {
     if (!currentBudget || !categoryToDelete) return;
 
-    await deleteBudgetCategory(currentBudget._id, categoryToDelete._id);
-    setCategoryToDelete(null);
-    setIsDeleteCategoryOpen(false);
+    try {
+      await deleteBudgetCategory(currentBudget._id, categoryToDelete._id);
+
+      toast({
+        title: "Category deleted",
+        description: `${categoryToDelete.name} has been removed from your budget`,
+      });
+
+      setCategoryToDelete(null);
+      setIsDeleteCategoryOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete category. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleDeleteBudget = async () => {
     if (!currentBudget) return;
 
-    await deleteBudget(currentBudget._id);
-    setIsDeleteBudgetOpen(false);
+    try {
+      await deleteBudget(currentBudget._id);
+
+      toast({
+        title: "Budget deleted",
+        description: "Your budget has been successfully deleted",
+      });
+
+      setIsDeleteBudgetOpen(false);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete budget. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const renderCategoryIcon = (iconName: string) => {
-     const IconComponent =
-       (LucideIcons[iconName as IconName] as LucideIcons.LucideIcon) ||
-       LucideIcons.Wallet;
-     return <IconComponent className="h-6 w-6" />;
+    const IconComponent =
+      (LucideIcons[iconName as IconName] as LucideIcons.LucideIcon) ||
+      LucideIcons.Wallet;
+    return <IconComponent className="h-6 w-6" />;
   };
 
   // Filter out categories that are already in the budget

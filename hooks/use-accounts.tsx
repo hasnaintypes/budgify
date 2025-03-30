@@ -36,7 +36,6 @@ export function useAccounts() {
       });
       return newAccount;
     } catch (error) {
-      console.error("Failed to create account:", error);
       throw error;
     }
   };
@@ -51,7 +50,6 @@ export function useAccounts() {
         ...updates,
       });
     } catch (error) {
-      console.error("Failed to update account:", error);
       throw error;
     }
   };
@@ -62,7 +60,6 @@ export function useAccounts() {
         id,
       });
     } catch (error) {
-      console.error("Failed to delete account:", error);
       throw error;
     }
   };
@@ -74,7 +71,6 @@ export function useAccounts() {
         isActive: true,
       });
     } catch (error) {
-      console.error("Failed to set active account:", error);
       throw error;
     }
   };

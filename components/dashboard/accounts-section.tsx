@@ -60,10 +60,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 type IconName = keyof typeof LucideIcons;
 
 export function AccountsSection() {
+    const { toast } = useToast();
+
   const { accounts, isLoading, addAccount, setActiveAccount, deleteAccount } =
     useAccounts();
   const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
@@ -100,7 +103,10 @@ export function AccountsSection() {
   const handleCreateAccount = () => {
     if (newAccount.name?.trim()) {
       addAccount(newAccount as Omit<Account, "id" | "createdAt" | "updatedAt">);
-
+      toast({
+        title: "Account Created",
+        description: `Successfully added ${newAccount.name}`,
+      });
       // Reset form
       setNewAccount({
         name: "",
@@ -113,6 +119,18 @@ export function AccountsSection() {
       });
 
       setIsCreateSheetOpen(false);
+    }
+  };
+
+
+  const handleDeleteAccount = () => {
+    if (accountToDelete) {
+      deleteAccount(accountToDelete.id);
+      toast({
+        title: "Account Deleted",
+        description: `Successfully deleted ${accountToDelete.name}`,
+      });
+      setAccountToDelete(null);
     }
   };
 
@@ -385,12 +403,7 @@ export function AccountsSection() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (accountToDelete) {
-                  deleteAccount(accountToDelete.id);
-                  setAccountToDelete(null);
-                }
-              }}
+              onClick={handleDeleteAccount}
               className="bg-destructive hover:bg-destructive/90"
             >
               Delete

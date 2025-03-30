@@ -159,7 +159,6 @@ export function TransactionSheet() {
 
       setOpen(false);
     } catch (error) {
-      console.error("Error creating transaction:", error);
       toast({
         title: "Error",
         description: "Failed to create transaction. Please try again.",

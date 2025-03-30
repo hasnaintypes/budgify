@@ -114,7 +114,6 @@ export function useBudgets(accountId?: Id<"accounts">) {
       setBudgets((prev) => [...prev, newBudget]);
       return newBudget;
     } catch (error) {
-      console.error("Failed to create budget:", error);
       return null;
     }
   };
@@ -140,7 +139,6 @@ export function useBudgets(accountId?: Id<"accounts">) {
         setCurrentBudget((prev) => (prev ? { ...prev, ...updates } : null));
       }
     } catch (error) {
-      console.error("Failed to update budget:", error);
     }
   };
 
@@ -155,7 +153,6 @@ export function useBudgets(accountId?: Id<"accounts">) {
         setCurrentBudget(null);
       }
     } catch (error) {
-      console.error("Failed to delete budget:", error);
     }
   };
 
@@ -211,7 +208,6 @@ export function useBudgets(accountId?: Id<"accounts">) {
 
       return newCategory;
     } catch (error) {
-      console.error("Failed to add budget category:", error);
       return null;
     }
   };
@@ -278,7 +274,6 @@ export function useBudgets(accountId?: Id<"accounts">) {
         });
       }
     } catch (error) {
-      console.error("Failed to update budget category:", error);
     }
   };
 
@@ -326,7 +321,6 @@ export function useBudgets(accountId?: Id<"accounts">) {
         });
       }
     } catch (error) {
-      console.error("Failed to delete budget category:", error);
     }
   };
 

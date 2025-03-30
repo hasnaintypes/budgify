@@ -1,6 +1,5 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { Doc, Id } from "./_generated/dataModel";
 
 export const syncUser = mutation({
   args: {
@@ -12,8 +11,6 @@ export const syncUser = mutation({
     currency: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    console.log("Syncing user with Clerk ID:", args.clerkId);
-
     // Check if user already exists
     const existingUser = await ctx.db
       .query("users")
@@ -21,8 +18,6 @@ export const syncUser = mutation({
       .first();
 
     if (existingUser) {
-      console.log("User already exists, updating...");
-
       // Update existing user
       await ctx.db.patch(existingUser._id, {
         name: args.name,
@@ -32,7 +27,6 @@ export const syncUser = mutation({
         currency: args.currency,
       });
 
-      console.log("User updated successfully.");
       return existingUser._id;
     }
 
@@ -47,7 +41,6 @@ export const syncUser = mutation({
       currency: args.currency,
     });
 
-    console.log("New user created successfully with ID:", userId);
     return userId;
   },
 });
@@ -62,12 +55,6 @@ export const getUserByClerkId = query({
       .withIndex("byClerkId", (q) => q.eq("clerkId", args.clerkId))
       .first();
 
-    if (!user) {
-      console.log("User not found.");
-      return null;
-    }
-
-    console.log("User found:", user);
     return user;
   },
 });

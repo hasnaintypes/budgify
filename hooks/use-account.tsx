@@ -9,8 +9,6 @@ export function useAccount(id: string) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log("useAccount triggered:", { id, accounts, isLoadingAccounts });
-
     // Avoid unnecessary state updates
     if (!isLoadingAccounts) {
       const foundAccount = accounts.find((acc) => acc.id === id) || null;
