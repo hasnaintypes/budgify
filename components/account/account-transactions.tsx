@@ -19,7 +19,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "lucide-react";
-import { useTransactions } from "@/hooks/use-transactions";
+import { useAccountTransactions } from "@/hooks/use-account-transactions";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   Table,
@@ -36,28 +36,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@clerk/nextjs";
 
 export function AccountTransactions({ accountId }: { accountId: string }) {
+  const { userId } = useAuth();
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const itemsPerPage = 5;
 
-  const { data, isLoading } = useTransactions();
-
-  // Filter transactions for this account
-  // In a real app, you would fetch transactions filtered by accountId from the API
-  const accountTransactions = data?.filter((t) => true); // Placeholder for account filtering
+  const { data, isLoading } = useAccountTransactions({
+    clerkId: userId || "",
+    accountId: accountId as any,
+    period: "all", // Get all transactions regardless of time period
+  });
 
   // Apply additional filters
-  const filteredTransactions = accountTransactions?.filter((transaction) => {
+  const filteredTransactions = data?.filter((transaction) => {
     const matchesSearch =
       transaction.description.toLowerCase().includes(search.toLowerCase()) ||
-      transaction.category.toLowerCase().includes(search.toLowerCase());
+      transaction.categoryName.toLowerCase().includes(search.toLowerCase());
 
     const matchesCategory =
-      categoryFilter === "all" || transaction.category === categoryFilter;
+      categoryFilter === "all" || transaction.categoryName === categoryFilter;
     const matchesType = typeFilter === "all" || transaction.type === typeFilter;
 
     return matchesSearch && matchesCategory && matchesType;
@@ -128,7 +130,7 @@ export function AccountTransactions({ accountId }: { accountId: string }) {
                 </TableHeader>
                 <TableBody>
                   {paginatedTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
+                    <TableRow key={transaction._id}>
                       <TableCell className="font-medium">
                         <div className="flex items-center gap-2">
                           <div
@@ -161,7 +163,7 @@ export function AccountTransactions({ accountId }: { accountId: string }) {
                               : "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300"
                           }
                         >
-                          {transaction.category}
+                          {transaction.categoryName}
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">

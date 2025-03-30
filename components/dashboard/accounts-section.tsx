@@ -50,13 +50,25 @@ import {
 import { IconPicker } from "@/components/ui/icon-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type IconName = keyof typeof LucideIcons;
 
 export function AccountsSection() {
-  const { accounts, isLoading, addAccount, setActiveAccount } = useAccounts();
+  const { accounts, isLoading, addAccount, setActiveAccount, deleteAccount } =
+    useAccounts();
   const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
   const isMobile = useIsMobile();
+  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
 
   const [newAccount, setNewAccount] = useState<Partial<Account>>({
     name: "",
@@ -69,7 +81,9 @@ export function AccountsSection() {
   });
 
   const renderAccountIcon = (iconName: string) => {
-    const IconComponent = LucideIcons[iconName as IconName];
+    const IconComponent =
+      (LucideIcons[iconName as IconName] as LucideIcons.LucideIcon) ||
+      LucideIcons.Wallet;
     return IconComponent ? (
       <IconComponent className="h-5 w-5" />
     ) : (
@@ -182,7 +196,12 @@ export function AccountsSection() {
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>Edit Account</DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => setAccountToDelete(account)}
+                          >
+                            Delete Account
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TooltipProvider>
@@ -349,6 +368,36 @@ export function AccountsSection() {
           </SheetFooter>
         </SheetContent>
       </Sheet>
+
+      {/* Delete Account Alert Dialog */}
+      <AlertDialog
+        open={!!accountToDelete}
+        onOpenChange={(open) => !open && setAccountToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the account "{accountToDelete?.name}"
+              and all its data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (accountToDelete) {
+                  deleteAccount(accountToDelete.id);
+                  setAccountToDelete(null);
+                }
+              }}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

@@ -33,15 +33,29 @@ import { Switch } from "@/components/ui/switch";
 import { IconPicker } from "@/components/ui/icon-picker";
 import { ColorPicker } from "@/components/ui/color-picker";
 import { useAccounts, type Account } from "@/hooks/use-accounts";
+import { useAccountTransactions } from "@/hooks/use-account-transactions";
 import { formatCurrency } from "@/lib/utils";
 import * as LucideIcons from "lucide-react";
+import { useAuth } from "@clerk/nextjs";
 
 type IconName = keyof typeof LucideIcons;
+type Period = "current" | "previous" | "last3" | "last6" | "year" | "all";
 
 export function AccountHeader({ account }: { account: Account }) {
+  const { userId } = useAuth();
   const { updateAccount } = useAccounts();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editedAccount, setEditedAccount] = useState<Account>(account);
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>("current");
+
+  // Use our custom hook to get transaction data
+  const { income, expenses, isLoading } = useAccountTransactions({
+    clerkId: userId || "",
+    accountId: account.id,
+    period: selectedPeriod,
+  });
+
+  let currentBalance = income - expenses;
 
   const handleEditAccount = () => {
     updateAccount(account.id, editedAccount);
@@ -49,7 +63,9 @@ export function AccountHeader({ account }: { account: Account }) {
   };
 
   const renderAccountIcon = (iconName: string) => {
-    const IconComponent = (LucideIcons[iconName as IconName] as LucideIcons.LucideIcon) || LucideIcons.Wallet;
+    const IconComponent =
+      (LucideIcons[iconName as IconName] as LucideIcons.LucideIcon) ||
+      LucideIcons.Wallet;
     return <IconComponent className="h-6 w-6" />;
   };
 
@@ -75,7 +91,11 @@ export function AccountHeader({ account }: { account: Account }) {
           </Button>
         </div>
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Select defaultValue="current">
+          <Select
+            defaultValue="current"
+            value={selectedPeriod}
+            onValueChange={(value) => setSelectedPeriod(value as Period)}
+          >
             <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Select period" />
             </SelectTrigger>
@@ -100,7 +120,7 @@ export function AccountHeader({ account }: { account: Account }) {
                   Current Balance
                 </p>
                 <p className="text-2xl font-bold">
-                  {formatCurrency(account.balance)}
+                  {formatCurrency(currentBalance)}
                 </p>
               </div>
               <div
@@ -118,10 +138,18 @@ export function AccountHeader({ account }: { account: Account }) {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Income This Month
+                  {selectedPeriod === "current"
+                    ? "Income This Month"
+                    : selectedPeriod === "previous"
+                      ? "Income Last Month"
+                      : selectedPeriod === "year"
+                        ? "Income This Year"
+                        : selectedPeriod === "all"
+                          ? "All-Time Income"
+                          : `Income (${selectedPeriod === "last3" ? "3" : "6"} months)`}
                 </p>
                 <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                  {formatCurrency(1250.0)}
+                  {isLoading ? "Loading..." : formatCurrency(income)}
                 </p>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900">
@@ -136,10 +164,18 @@ export function AccountHeader({ account }: { account: Account }) {
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">
-                  Expenses This Month
+                  {selectedPeriod === "current"
+                    ? "Expenses This Month"
+                    : selectedPeriod === "previous"
+                      ? "Expenses Last Month"
+                      : selectedPeriod === "year"
+                        ? "Expenses This Year"
+                        : selectedPeriod === "all"
+                          ? "All-Time Expenses"
+                          : `Expenses (${selectedPeriod === "last3" ? "3" : "6"} months)`}
                 </p>
                 <p className="text-2xl font-bold text-rose-600 dark:text-rose-400">
-                  {formatCurrency(850.25)}
+                  {isLoading ? "Loading..." : formatCurrency(expenses)}
                 </p>
               </div>
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-900">

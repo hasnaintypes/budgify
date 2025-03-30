@@ -9,19 +9,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  type ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { type ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { useBudgets } from "@/hooks/use-budgets";
 import { formatCurrency } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { Id } from "@/convex/_generated/dataModel";
 
 export function SpendingAnalysis({ accountId }: { accountId: string }) {
-  const { currentBudget, isLoading } = useBudgets(accountId);
+  const { currentBudget, isLoading } = useBudgets(accountId as Id<"accounts">);
 
   if (isLoading) {
     return (
@@ -64,6 +60,7 @@ export function SpendingAnalysis({ accountId }: { accountId: string }) {
       fill: category.color,
     }));
 
+  // Create a chart config that uses the category colors
   const chartConfig = {
     spent: {
       label: "Spent",
@@ -73,6 +70,16 @@ export function SpendingAnalysis({ accountId }: { accountId: string }) {
       label: "Budgeted",
       color: "hsl(var(--chart-2))",
     },
+    ...chartData.reduce(
+      (acc, category) => {
+        acc[category.name] = {
+          label: category.name,
+          color: category.fill,
+        };
+        return acc;
+      },
+      {} as Record<string, { label: string; color: string }>
+    ),
   } satisfies ChartConfig;
 
   return (
@@ -87,7 +94,7 @@ export function SpendingAnalysis({ accountId }: { accountId: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="h-[250px]">
+        <ChartContainer config={chartConfig} className="max-h-[250px] mt-5 ">
           <BarChart
             data={chartData}
             margin={{ top: 10, right: 30, left: 0, bottom: 5 }}
@@ -106,19 +113,13 @@ export function SpendingAnalysis({ accountId }: { accountId: string }) {
               tickLine={false}
               axisLine={false}
             />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  formatter={(value) => formatCurrency(value as number)}
-                />
-              }
-            />
             <Bar
               dataKey="spent"
-              fill="hsl(var(--chart-1))"
               radius={[4, 4, 0, 0]}
               barSize={30}
               name="Spent"
+              // Use the category's color for each bar
+              fill="currentColor"
             />
           </BarChart>
         </ChartContainer>

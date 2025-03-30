@@ -1,265 +1,334 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
+import { useAuth } from "@clerk/nextjs";
 
 export type BudgetCategory = {
-  id: string
-  name: string
-  categoryId: string
-  budgeted: number
-  spent: number
-  accountId: string
-  color: string
-  icon: string
-}
+  _id: Id<"budgetCategories">;
+  name: string;
+  categoryId: Id<"categories">;
+  categoryName: string;
+  budgeted: number;
+  spent: number;
+  accountId: Id<"accounts">;
+  color: string;
+  icon: string;
+  budgetId: Id<"budgets">;
+  userId: Id<"users">;
+};
 
 export type Budget = {
-  id: string
-  accountId: string
-  month: string // Format: "YYYY-MM"
-  totalBudgeted: number
-  totalSpent: number
-  categories: BudgetCategory[]
-}
+  _id: Id<"budgets">;
+  accountId: Id<"accounts">;
+  month: string; // Format: "YYYY-MM"
+  totalBudgeted: number;
+  totalSpent: number;
+  userId: Id<"users">;
+  categories: BudgetCategory[];
+};
 
-// Sample budget data
-const sampleBudgets: Budget[] = [
-  {
-    id: "budget-1",
-    accountId: "acc-1",
-    month: "2025-03",
-    totalBudgeted: 3000,
-    totalSpent: 2450.75,
-    categories: [
-      {
-        id: "budget-cat-1",
-        name: "Food & Dining",
-        categoryId: "cat-1",
-        budgeted: 600,
-        spent: 520.75,
-        accountId: "acc-1",
-        color: "#f97316",
-        icon: "Utensils",
-      },
-      {
-        id: "budget-cat-2",
-        name: "Transportation",
-        categoryId: "cat-2",
-        budgeted: 300,
-        spent: 280,
-        accountId: "acc-1",
-        color: "#6366f1",
-        icon: "Car",
-      },
-      {
-        id: "budget-cat-3",
-        name: "Utilities",
-        categoryId: "cat-3",
-        budgeted: 400,
-        spent: 350,
-        accountId: "acc-1",
-        color: "#eab308",
-        icon: "Zap",
-      },
-      {
-        id: "budget-cat-4",
-        name: "Entertainment",
-        categoryId: "cat-4",
-        budgeted: 200,
-        spent: 180,
-        accountId: "acc-1",
-        color: "#8b5cf6",
-        icon: "Film",
-      },
-      {
-        id: "budget-cat-5",
-        name: "Shopping",
-        categoryId: "cat-9",
-        budgeted: 500,
-        spent: 620,
-        accountId: "acc-1",
-        color: "#a855f7",
-        icon: "ShoppingBag",
-      },
-      {
-        id: "budget-cat-6",
-        name: "Healthcare",
-        categoryId: "cat-10",
-        budgeted: 300,
-        spent: 150,
-        accountId: "acc-1",
-        color: "#14b8a6",
-        icon: "Stethoscope",
-      },
-      {
-        id: "budget-cat-7",
-        name: "Housing",
-        categoryId: "cat-11",
-        budgeted: 700,
-        spent: 700,
-        accountId: "acc-1",
-        color: "#f43f5e",
-        icon: "Home",
-      },
-    ],
-  },
-  {
-    id: "budget-2",
-    accountId: "acc-2",
-    month: "2025-03",
-    totalBudgeted: 5000,
-    totalSpent: 3200,
-    categories: [
-      {
-        id: "budget-cat-8",
-        name: "Office Supplies",
-        categoryId: "cat-12",
-        budgeted: 1000,
-        spent: 800,
-        accountId: "acc-2",
-        color: "#3b82f6",
-        icon: "Briefcase",
-      },
-      {
-        id: "budget-cat-9",
-        name: "Marketing",
-        categoryId: "cat-13",
-        budgeted: 2000,
-        spent: 1500,
-        accountId: "acc-2",
-        color: "#10b981",
-        icon: "TrendingUp",
-      },
-      {
-        id: "budget-cat-10",
-        name: "Travel",
-        categoryId: "cat-14",
-        budgeted: 1500,
-        spent: 900,
-        accountId: "acc-2",
-        color: "#f59e0b",
-        icon: "Plane",
-      },
-      {
-        id: "budget-cat-11",
-        name: "Software",
-        categoryId: "cat-15",
-        budgeted: 500,
-        spent: 0,
-        accountId: "acc-2",
-        color: "#6366f1",
-        icon: "Laptop",
-      },
-    ],
-  },
-]
+export function useBudgets(accountId?: Id<"accounts">) {
+  const { userId } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
+  const [currentBudget, setCurrentBudget] = useState<Budget | null>(null);
 
-export function useBudgets(accountId?: string) {
-  const [isLoading, setIsLoading] = useState(true)
-  const [budgets, setBudgets] = useState<Budget[]>([])
-  const [currentBudget, setCurrentBudget] = useState<Budget | null>(null)
+  // Get user ID from Clerk
+  const user = useQuery(
+    api.users.getUserByClerkId,
+    userId ? { clerkId: userId } : "skip"
+  );
+
+  // Get all budgets for the user
+  const allBudgets = useQuery(
+    api.budgets.getAllBudgets,
+    user?._id ? { userId: user._id } : "skip"
+  );
+
+  // Get budgets for a specific account
+  const accountBudgets = useQuery(
+    api.budgets.getBudgetsByAccount,
+    user?._id && accountId ? { userId: user._id, accountId } : "skip"
+  );
+
+  // Get current budget for an account
+  const currentAccountBudget = useQuery(
+    api.budgets.getCurrentBudget,
+    user?._id && accountId ? { userId: user._id, accountId } : "skip"
+  );
+
+  // Mutations
+  const createBudgetMutation = useMutation(api.budgets.createBudget);
+  const updateBudgetMutation = useMutation(api.budgets.updateBudget);
+  const deleteBudgetMutation = useMutation(api.budgets.deleteBudget);
+  const addBudgetCategoryMutation = useMutation(api.budgets.addBudgetCategory);
+  const updateBudgetCategoryMutation = useMutation(
+    api.budgets.updateBudgetCategory
+  );
+  const deleteBudgetCategoryMutation = useMutation(
+    api.budgets.deleteBudgetCategory
+  );
 
   useEffect(() => {
-    // Simulate API call
-    const timer = setTimeout(() => {
-      if (accountId) {
-        const filteredBudgets = sampleBudgets.filter((budget) => budget.accountId === accountId)
-        setBudgets(filteredBudgets)
+    if (!user?._id) return;
 
-        // Set current month's budget or null if not found
-        const currentMonth = new Date().toISOString().slice(0, 7) // "YYYY-MM"
-        const current = filteredBudgets.find((budget) => budget.month === currentMonth) || filteredBudgets[0] || null
-        setCurrentBudget(current)
-      } else {
-        setBudgets(sampleBudgets)
-        setCurrentBudget(null)
+    if (accountId) {
+      // If we have account budgets data
+      if (accountBudgets) {
+        setBudgets(accountBudgets);
+        setCurrentBudget(currentAccountBudget || accountBudgets[0] || null);
+        setIsLoading(false);
       }
-      setIsLoading(false)
-    }, 1000)
-
-    return () => clearTimeout(timer)
-  }, [accountId])
-
-  const addBudget = (budget: Omit<Budget, "id">) => {
-    const newBudget = {
-      ...budget,
-      id: `budget-${Date.now()}`,
+    } else {
+      // If we have all budgets data
+      if (allBudgets) {
+        setBudgets(allBudgets);
+        setCurrentBudget(null);
+        setIsLoading(false);
+      }
     }
-    setBudgets((prev) => [...prev, newBudget])
-    return newBudget
-  }
+  }, [user?._id, accountId, allBudgets, accountBudgets, currentAccountBudget]);
 
-  const updateBudget = (id: string, updates: Partial<Budget>) => {
-    setBudgets((prev) => prev.map((budget) => (budget.id === id ? { ...budget, ...updates } : budget)))
+  const addBudget = async (
+    budget: Omit<Budget, "_id" | "userId" | "categories">
+  ) => {
+    if (!user?._id) return null;
 
-    if (currentBudget?.id === id) {
-      setCurrentBudget((prev) => (prev ? { ...prev, ...updates } : null))
+    try {
+      const budgetId = await createBudgetMutation({
+        ...budget,
+        userId: user._id,
+      });
+
+      // Optimistically update the UI
+      const newBudget = {
+        _id: budgetId,
+        ...budget,
+        userId: user._id,
+        categories: [],
+      };
+
+      setBudgets((prev) => [...prev, newBudget]);
+      return newBudget;
+    } catch (error) {
+      console.error("Failed to create budget:", error);
+      return null;
     }
-  }
+  };
 
-  const deleteBudget = (id: string) => {
-    setBudgets((prev) => prev.filter((budget) => budget.id !== id))
+  const updateBudget = async (
+    id: Id<"budgets">,
+    updates: Partial<Omit<Budget, "_id" | "userId" | "categories">>
+  ) => {
+    try {
+      await updateBudgetMutation({
+        budgetId: id,
+        ...updates,
+      });
 
-    if (currentBudget?.id === id) {
-      setCurrentBudget(null)
+      // Optimistically update the UI
+      setBudgets((prev) =>
+        prev.map((budget) =>
+          budget._id === id ? { ...budget, ...updates } : budget
+        )
+      );
+
+      if (currentBudget?._id === id) {
+        setCurrentBudget((prev) => (prev ? { ...prev, ...updates } : null));
+      }
+    } catch (error) {
+      console.error("Failed to update budget:", error);
     }
-  }
+  };
 
-  const updateBudgetCategory = (budgetId: string, categoryId: string, updates: Partial<BudgetCategory>) => {
-    setBudgets((prev) =>
-      prev.map((budget) => {
-        if (budget.id === budgetId) {
-          const updatedCategories = budget.categories.map((category) =>
-            category.id === categoryId ? { ...category, ...updates } : category,
-          )
+  const deleteBudget = async (id: Id<"budgets">) => {
+    try {
+      await deleteBudgetMutation({ budgetId: id });
 
-          // Recalculate totals if necessary
-          let totalBudgeted = 0
-          let totalSpent = 0
+      // Optimistically update the UI
+      setBudgets((prev) => prev.filter((budget) => budget._id !== id));
 
-          updatedCategories.forEach((cat) => {
-            totalBudgeted += cat.budgeted
-            totalSpent += cat.spent
-          })
+      if (currentBudget?._id === id) {
+        setCurrentBudget(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete budget:", error);
+    }
+  };
+
+  const addBudgetCategory = async (
+    budgetId: Id<"budgets">,
+    category: Omit<BudgetCategory, "_id" | "userId" | "budgetId">
+  ) => {
+    if (!user?._id) return null;
+
+    try {
+      const categoryId = await addBudgetCategoryMutation({
+        ...category,
+        budgetId,
+        userId: user._id,
+      });
+
+      // Optimistically update the UI
+      const newCategory = {
+        _id: categoryId,
+        ...category,
+        budgetId,
+        userId: user._id,
+      };
+
+      setBudgets((prev) =>
+        prev.map((budget) => {
+          if (budget._id === budgetId) {
+            // Add category and update totals
+            const updatedBudget = {
+              ...budget,
+              categories: [...budget.categories, newCategory],
+              totalBudgeted: budget.totalBudgeted + category.budgeted,
+              totalSpent: budget.totalSpent + category.spent,
+            };
+            return updatedBudget;
+          }
+          return budget;
+        })
+      );
+
+      // Update current budget if it's the one being modified
+      if (currentBudget?._id === budgetId) {
+        setCurrentBudget((prev) => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            categories: [...prev.categories, newCategory],
+            totalBudgeted: prev.totalBudgeted + category.budgeted,
+            totalSpent: prev.totalSpent + category.spent,
+          };
+        });
+      }
+
+      return newCategory;
+    } catch (error) {
+      console.error("Failed to add budget category:", error);
+      return null;
+    }
+  };
+
+  const updateBudgetCategory = async (
+    budgetId: Id<"budgets">,
+    categoryId: Id<"budgetCategories">,
+    updates: Partial<Pick<BudgetCategory, "budgeted" | "spent">>
+  ) => {
+    try {
+      await updateBudgetCategoryMutation({
+        categoryId,
+        ...updates,
+      });
+
+      // Find the category to calculate differences
+      const budget = budgets.find((b) => b._id === budgetId);
+      const category = budget?.categories.find((c) => c._id === categoryId);
+
+      if (!budget || !category) return;
+
+      // Calculate differences for budget totals
+      const budgetedDiff =
+        updates.budgeted !== undefined
+          ? updates.budgeted - category.budgeted
+          : 0;
+      const spentDiff =
+        updates.spent !== undefined ? updates.spent - category.spent : 0;
+
+      // Optimistically update the UI
+      setBudgets((prev) =>
+        prev.map((budget) => {
+          if (budget._id === budgetId) {
+            const updatedCategories = budget.categories.map((cat) =>
+              cat._id === categoryId ? { ...cat, ...updates } : cat
+            );
+
+            return {
+              ...budget,
+              categories: updatedCategories,
+              totalBudgeted: budget.totalBudgeted + budgetedDiff,
+              totalSpent: budget.totalSpent + spentDiff,
+            };
+          }
+          return budget;
+        })
+      );
+
+      // Update current budget if it's the one being modified
+      if (currentBudget?._id === budgetId) {
+        setCurrentBudget((prev) => {
+          if (!prev) return null;
+
+          const updatedCategories = prev.categories.map((cat) =>
+            cat._id === categoryId ? { ...cat, ...updates } : cat
+          );
 
           return {
-            ...budget,
+            ...prev,
             categories: updatedCategories,
-            totalBudgeted,
-            totalSpent,
-          }
-        }
-        return budget
-      }),
-    )
-
-    // Update current budget if it's the one being modified
-    if (currentBudget?.id === budgetId) {
-      setCurrentBudget((prev) => {
-        if (!prev) return null
-
-        const updatedCategories = prev.categories.map((category) =>
-          category.id === categoryId ? { ...category, ...updates } : category,
-        )
-
-        // Recalculate totals
-        let totalBudgeted = 0
-        let totalSpent = 0
-
-        updatedCategories.forEach((cat) => {
-          totalBudgeted += cat.budgeted
-          totalSpent += cat.spent
-        })
-
-        return {
-          ...prev,
-          categories: updatedCategories,
-          totalBudgeted,
-          totalSpent,
-        }
-      })
+            totalBudgeted: prev.totalBudgeted + budgetedDiff,
+            totalSpent: prev.totalSpent + spentDiff,
+          };
+        });
+      }
+    } catch (error) {
+      console.error("Failed to update budget category:", error);
     }
-  }
+  };
+
+  const deleteBudgetCategory = async (
+    budgetId: Id<"budgets">,
+    categoryId: Id<"budgetCategories">
+  ) => {
+    try {
+      // Find the category to calculate differences
+      const budget = budgets.find((b) => b._id === budgetId);
+      const category = budget?.categories.find((c) => c._id === categoryId);
+
+      if (!budget || !category) return;
+
+      await deleteBudgetCategoryMutation({ categoryId });
+
+      // Optimistically update the UI
+      setBudgets((prev) =>
+        prev.map((budget) => {
+          if (budget._id === budgetId) {
+            return {
+              ...budget,
+              categories: budget.categories.filter(
+                (cat) => cat._id !== categoryId
+              ),
+              totalBudgeted: budget.totalBudgeted - category.budgeted,
+              totalSpent: budget.totalSpent - category.spent,
+            };
+          }
+          return budget;
+        })
+      );
+
+      // Update current budget if it's the one being modified
+      if (currentBudget?._id === budgetId) {
+        setCurrentBudget((prev) => {
+          if (!prev) return null;
+
+          return {
+            ...prev,
+            categories: prev.categories.filter((cat) => cat._id !== categoryId),
+            totalBudgeted: prev.totalBudgeted - category.budgeted,
+            totalSpent: prev.totalSpent - category.spent,
+          };
+        });
+      }
+    } catch (error) {
+      console.error("Failed to delete budget category:", error);
+    }
+  };
 
   return {
     budgets,
@@ -268,7 +337,8 @@ export function useBudgets(accountId?: string) {
     addBudget,
     updateBudget,
     deleteBudget,
+    addBudgetCategory,
     updateBudgetCategory,
-  }
+    deleteBudgetCategory,
+  };
 }
-
