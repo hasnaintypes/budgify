@@ -1,94 +1,123 @@
-# Budgify - Personal Finance Management Dashboard
+# Budgify - Modern Personal Finance Dashboard
 
-Budgify is a modern, feature-rich personal finance management application built with Next.js. It provides an intuitive interface for tracking expenses, managing income, and visualizing financial data through interactive charts and reports.
+![Budgify Banner](https://via.placeholder.com/1200x400) *Add a nice banner image here*
 
-## Features
+Budgify is a comprehensive personal finance management application built with Next.js, offering real-time financial tracking, analytics, and visualization tools.
 
-- **Transaction Management**
-  - Track both income and expenses
-  - Categorize transactions
-  - Add detailed descriptions and dates
-  - Filter and search functionality
+## ✨ Key Features
 
-- **Financial Analytics**
-  - Income vs Expense trends
-  - Category-wise breakdown
-  - Interactive charts and graphs
-  - Customizable date ranges
+### 📊 Dashboard Overview
+- Real-time financial snapshot
+- Monthly spending vs income comparison
+- Quick access to recent transactions
 
-- **Data Visualization**
-  - Area charts for trend analysis
-  - Bar charts for comparison
-  - Pie charts for category distribution
-  - Real-time updates
+### 💰 Transaction Management
+- **Income & Expense Tracking**
+- **Smart Categorization** (Auto-tagging)
+- **Multi-account Support**
+- **Recurring Transactions**
+- **Receipt Capture** (Coming Soon)
 
-- **Modern UI/UX**
-  - Clean and intuitive interface
-  - Responsive design
-  - Dark/Light mode support
-  - Interactive components
+### 📈 Advanced Analytics
+- Interactive charts with filtering
+- Custom report generation
+- Export to CSV/PDF
+- Budget vs Actual comparison
 
-## Getting Started
+### 🔒 Security Features
+- End-to-end encryption
+- Biometric authentication
+- Role-based access control
+
+## 🚀 Getting Started
 
 ### Prerequisites
-
-- Node.js (v18 or higher)
-- npm or yarn package manager
+- Node.js v18+
+- npm v9+ or yarn
 - Clerk account (for authentication)
 - Convex account (for backend)
 
 ### Installation
-
-1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/nainee99/budgify.git
 cd budgify
-```
-
-2. Install dependencies:
-```bash
 npm install
-# or
-yarn install
 ```
 
-3. Set up environment variables:
-Create a `.env.local` file in the root directory and add the following:
+### Configuration
+Create `.env.local` file with these variables (see `.env.example` for reference):
 ```env
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key
-CLERK_SECRET_KEY=your_clerk_secret_key
-NEXT_PUBLIC_CONVEX_URL=your_convex_deployment_url
+# Authentication
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
+CLERK_SECRET_KEY=your_secret_key
+
+# Backend
+NEXT_PUBLIC_CONVEX_URL=your_convex_url
+
+# Optional Features
+ENABLE_RECURRING_TRANSACTIONS=true
+MAX_UPLOAD_SIZE=5MB
 ```
 
-4. Start the development server:
+### Running the App
 ```bash
 npm run dev
-# or
-yarn dev
+```
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## 🛠 Tech Stack
+
+### Core
+- **Next.js 14** - App Router, Server Components
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **shadcn/ui** - UI components
+
+### Backend
+- **Convex** - Real-time database
+- **Clerk** - Authentication
+
+### Visualization
+- **Recharts** - Interactive charts
+- **React Table** - Data tables
+
+### Testing
+- **Jest** - Unit testing
+- **Cypress** - E2E testing
+
+## 📂 Project Structure
+```
+budgify/
+├── app/               # Next.js app router
+├── components/        # Reusable components
+├── lib/               # Utility functions
+├── convex/            # Convex functions
+├── public/            # Static assets
+└── tests/             # Test files
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+## 🤝 Contributing
 
-## Usage
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-1. **Dashboard**: View your financial overview, recent transactions, and key metrics.
-2. **Transactions**: Manage and track all your financial transactions.
-3. **Analytics**: Analyze your spending patterns and income sources.
-4. **Reports**: Generate detailed financial reports and export data.
+### Development Scripts
+```bash
+npm run dev       # Start development server
+npm run build     # Create production build
+npm run start     # Run production build
+npm run test      # Run tests
+npm run lint      # Run linter
+npm run format    # Format code
+```
 
-## Tech Stack
+## 📄 License
+Distributed under the MIT License. See `LICENSE` for more information.
 
-- [Next.js](https://nextjs.org) - React framework
-- [Clerk](https://clerk.com) - Authentication and user management
-- [Convex](https://convex.dev) - Backend and real-time database
-- [Tailwind CSS](https://tailwindcss.com) - Styling
-- [Recharts](https://recharts.org) - Data visualization
-- [TypeScript](https://www.typescriptlang.org) - Type safety
+## 📧 Contact
+Your Name - [@nainee99](https://twitter.com/nainee99) - naine909@gmail.com
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+Project Link: [https://github.com/yourusername/budgify](https://github.com/ni/budgify)
