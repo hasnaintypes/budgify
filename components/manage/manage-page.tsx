@@ -2,23 +2,25 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Database, Settings, Download } from "lucide-react";
+import { Database, Settings, Download, RefreshCw } from "lucide-react";
 import { CategoriesSection } from "@/components/manage/categories-section";
 import { SettingsSection } from "@/components/manage/settings-section";
 import { DataManagementSection } from "@/components/manage/data-management-section";
+import { RecurringTransactionsSection } from "@/components/manage/recurring-transactions-section";
 import { useUser } from "@clerk/nextjs";
 import { useConvexAuth } from "convex/react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
-type ActiveSection = "categories" | "settings" | "data";
+type ActiveSection = "categories" | "settings" | "data" | "recurring";
 
 export default function ManageComponent() {
-  const [activeSection, setActiveSection] = useState<ActiveSection>("categories");
+  const [activeSection, setActiveSection] =
+    useState<ActiveSection>("categories");
   const { user } = useUser();
   const { isAuthenticated } = useConvexAuth();
-  const userDetails = useQuery(api.users.getUserByClerkId, { 
-    clerkId: user?.id ?? "" 
+  const userDetails = useQuery(api.users.getUserByClerkId, {
+    clerkId: user?.id ?? "",
   });
 
   return (
@@ -26,7 +28,7 @@ export default function ManageComponent() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Manage</h1>
         <p className="text-muted-foreground">
-          Manage your categories and settings
+          Manage your categories, recurring transactions, and settings
         </p>
       </div>
 
@@ -40,6 +42,14 @@ export default function ManageComponent() {
           >
             <Database className="mr-2 h-4 w-4" />
             Categories
+          </Button>
+          <Button
+            variant={activeSection === "recurring" ? "default" : "ghost"}
+            className="flex-1 whitespace-nowrap"
+            onClick={() => setActiveSection("recurring")}
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Recurring
           </Button>
           <Button
             variant={activeSection === "settings" ? "default" : "ghost"}
@@ -73,6 +83,14 @@ export default function ManageComponent() {
               Categories
             </Button>
             <Button
+              variant={activeSection === "recurring" ? "default" : "ghost"}
+              className="w-full justify-start"
+              onClick={() => setActiveSection("recurring")}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Recurring Transactions
+            </Button>
+            <Button
               variant={activeSection === "settings" ? "default" : "ghost"}
               className="w-full justify-start"
               onClick={() => setActiveSection("settings")}
@@ -92,7 +110,10 @@ export default function ManageComponent() {
         </div>
 
         <div className="flex-1 p-6">
-          {activeSection === "categories" && isAuthenticated && userDetails && <CategoriesSection userId={userDetails._id} />}
+          {activeSection === "categories" && isAuthenticated && userDetails && (
+            <CategoriesSection userId={userDetails._id} />
+          )}
+          {activeSection === "recurring" && <RecurringTransactionsSection />}
           {activeSection === "settings" && <SettingsSection />}
           {activeSection === "data" && <DataManagementSection />}
         </div>
@@ -100,7 +121,10 @@ export default function ManageComponent() {
 
       {/* Mobile content area */}
       <div className="md:hidden">
-        {activeSection === "categories" && isAuthenticated && userDetails && <CategoriesSection userId={userDetails._id} />}
+        {activeSection === "categories" && isAuthenticated && userDetails && (
+          <CategoriesSection userId={userDetails._id} />
+        )}
+        {activeSection === "recurring" && <RecurringTransactionsSection />}
         {activeSection === "settings" && <SettingsSection />}
         {activeSection === "data" && <DataManagementSection />}
       </div>

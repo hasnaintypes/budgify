@@ -11,11 +11,11 @@ export function useAccount(id: string) {
   useEffect(() => {
     // Avoid unnecessary state updates
     if (!isLoadingAccounts) {
-      const foundAccount = accounts.find((acc) => acc.id === id) || null;
+      const foundAccount = accounts.find((acc) => acc._id === id) || null;
 
       // Only update state if the value has changed
       setAccount((prevAccount) =>
-        prevAccount?.id !== foundAccount?.id ? foundAccount : prevAccount
+        prevAccount?._id !== foundAccount?._id ? foundAccount : prevAccount
       );
       setIsLoading(false);
     }
