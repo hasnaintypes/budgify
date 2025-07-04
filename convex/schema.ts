@@ -54,11 +54,52 @@ export default defineSchema({
     location: v.optional(v.string()),
     notes: v.optional(v.string()),
     receipt: v.optional(v.string()),
+    // Recurring transaction fields
+    isRecurring: v.optional(v.boolean()),
+    recurringId: v.optional(v.id("recurringTransactions")),
   })
     .index("byUserId", ["userId"])
     .index("byAccount", ["userId", "accountId"])
     .index("byCategory", ["userId", "categoryId"])
-    .index("byDate", ["userId", "date"]),
+    .index("byDate", ["userId", "date"])
+    .index("byRecurring", ["recurringId"]),
+
+  recurringTransactions: defineTable({
+    description: v.string(),
+    amount: v.number(),
+    type: v.union(v.literal("income"), v.literal("expense")),
+    categoryId: v.id("categories"),
+    categoryName: v.string(),
+    accountId: v.id("accounts"),
+    userId: v.id("users"),
+    paymentMethod: v.union(
+      v.literal("CASH"),
+      v.literal("CREDIT_CARD"),
+      v.literal("DEBIT_CARD"),
+      v.literal("BANK_TRANSFER"),
+      v.literal("MOBILE_PAYMENT"),
+      v.literal("OTHER")
+    ),
+    frequency: v.union(
+      v.literal("DAILY"),
+      v.literal("WEEKLY"),
+      v.literal("MONTHLY"),
+      v.literal("YEARLY")
+    ),
+    nextDueDate: v.number(),
+    startDate: v.number(),
+    endDate: v.optional(v.number()),
+    location: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    receipt: v.optional(v.string()),
+    isActive: v.boolean(),
+    lastProcessed: v.optional(v.number()),
+  })
+    .index("byUserId", ["userId"])
+    .index("byAccount", ["userId", "accountId"])
+    .index("byCategory", ["userId", "categoryId"])
+    .index("byActive", ["isActive"])
+    .index("byDueDate", ["isActive", "nextDueDate"]),
 
   budgetCategories: defineTable({
     name: v.string(),

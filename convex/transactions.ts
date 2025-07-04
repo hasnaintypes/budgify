@@ -1,6 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { api } from "./_generated/api";
 
 export const createTransaction = mutation({
   args: {
@@ -22,6 +22,17 @@ export const createTransaction = mutation({
     location: v.optional(v.string()),
     notes: v.optional(v.string()),
     receipt: v.optional(v.string()),
+    // Recurring transaction fields
+    isRecurring: v.optional(v.boolean()),
+    frequency: v.optional(
+      v.union(
+        v.literal("DAILY"),
+        v.literal("WEEKLY"),
+        v.literal("MONTHLY"),
+        v.literal("YEARLY")
+      )
+    ),
+    endDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     // Get the category
@@ -30,53 +41,170 @@ export const createTransaction = mutation({
       throw new Error("Category not found");
     }
 
-    // Insert the transaction
+    // If this is a recurring transaction, create the recurring template first
+    if (args.isRecurring && args.frequency) {
+      const recurringId = await ctx.db.insert("recurringTransactions", {
+        description: args.description,
+        amount: args.amount,
+        type: args.type,
+        categoryId: args.categoryId,
+        categoryName: category.name,
+        accountId: args.accountId,
+        userId: args.userId,
+        paymentMethod: args.paymentMethod,
+        frequency: args.frequency,
+        nextDueDate: calculateNextDueDate(args.date, args.frequency),
+        startDate: args.date,
+        endDate: args.endDate,
+        location: args.location,
+        notes: args.notes,
+        receipt: args.receipt,
+        isActive: true,
+      });
+
+      // Schedule the next recurring transaction
+      const nextDueDate = calculateNextDueDate(args.date, args.frequency);
+      const timeDiff = nextDueDate - Date.now();
+      if (timeDiff > 0) {
+        await ctx.scheduler.runAfter(
+          timeDiff,
+          api.recurringTransactions.processRecurringTransaction,
+          {
+            recurringId,
+          }
+        );
+      }
+
+      // Create the initial transaction with recurring reference
+      const transactionId = await ctx.db.insert("transactions", {
+        description: args.description,
+        amount: args.amount,
+        type: args.type,
+        categoryId: args.categoryId,
+        categoryName: category.name,
+        accountId: args.accountId,
+        userId: args.userId,
+        paymentMethod: args.paymentMethod,
+        date: args.date,
+        location: args.location,
+        notes: args.notes,
+        receipt: args.receipt,
+        isRecurring: true,
+        recurringId: recurringId,
+      });
+
+      // Update budget if this is an expense
+      if (args.type === "expense") {
+        await updateBudgetForTransaction(ctx, args, category);
+      }
+
+      return transactionId;
+    }
+
+    // Regular one-time transaction
     const transactionId = await ctx.db.insert("transactions", {
-      ...args,
+      description: args.description,
+      amount: args.amount,
+      type: args.type,
+      categoryId: args.categoryId,
       categoryName: category.name,
+      accountId: args.accountId,
+      userId: args.userId,
+      paymentMethod: args.paymentMethod,
+      date: args.date,
+      location: args.location,
+      notes: args.notes,
+      receipt: args.receipt,
+      isRecurring: false,
     });
 
-    // Only update budget for expense transactions
+    // Update budget if this is an expense
     if (args.type === "expense") {
-      // Get current month in YYYY-MM format for finding the current budget
-      const transactionDate = new Date(args.date);
-      const month = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, "0")}`;
-
-      // Find the current budget for this account
-      const budget = await ctx.db
-        .query("budgets")
-        .withIndex("byUserAndAccount", (q) =>
-          q.eq("userId", args.userId).eq("accountId", args.accountId)
-        )
-        .filter((q) => q.eq(q.field("month"), month))
-        .first();
-
-      if (budget) {
-        // Find the budget category that matches this transaction's category
-        const budgetCategory = await ctx.db
-          .query("budgetCategories")
-          .withIndex("byBudget", (q) => q.eq("budgetId", budget._id))
-          .filter((q) => q.eq(q.field("categoryId"), args.categoryId))
-          .first();
-
-        if (budgetCategory) {
-          // Update the budget category's spent amount
-          const newSpent = budgetCategory.spent + args.amount;
-          await ctx.db.patch(budgetCategory._id, {
-            spent: newSpent,
-          });
-
-          // Update the budget's total spent amount
-          await ctx.db.patch(budget._id, {
-            totalSpent: budget.totalSpent + args.amount,
-          });
-        }
-      }
+      await updateBudgetForTransaction(ctx, args, category);
     }
 
     return transactionId;
   },
 });
+
+// Helper function to update budget
+async function updateBudgetForTransaction(ctx: any, args: any, category: any) {
+  const transactionDate = new Date(args.date);
+  const month = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, "0")}`;
+
+  const budget = await ctx.db
+    .query("budgets")
+    .withIndex(
+      "byUserAndAccount",
+      (q: {
+        eq: (
+          arg0: string,
+          arg1: any
+        ) => {
+          (): any;
+          new (): any;
+          eq: { (arg0: string, arg1: any): any; new (): any };
+        };
+      }) => q.eq("userId", args.userId).eq("accountId", args.accountId)
+    )
+    .filter(
+      (q: {
+        eq: (arg0: any, arg1: string) => any;
+        field: (arg0: string) => any;
+      }) => q.eq(q.field("month"), month)
+    )
+    .first();
+
+  if (budget) {
+    const budgetCategory = await ctx.db
+      .query("budgetCategories")
+      .withIndex("byBudget", (q: { eq: (arg0: string, arg1: any) => any }) =>
+        q.eq("budgetId", budget._id)
+      )
+      .filter(
+        (q: {
+          eq: (arg0: any, arg1: any) => any;
+          field: (arg0: string) => any;
+        }) => q.eq(q.field("categoryId"), args.categoryId)
+      )
+      .first();
+
+    if (budgetCategory) {
+      const newSpent = budgetCategory.spent + args.amount;
+      await ctx.db.patch(budgetCategory._id, {
+        spent: newSpent,
+      });
+
+      await ctx.db.patch(budget._id, {
+        totalSpent: budget.totalSpent + args.amount,
+      });
+    }
+  }
+}
+
+// Helper function to calculate next due date
+function calculateNextDueDate(currentDate: number, frequency: string): number {
+  const date = new Date(currentDate);
+
+  switch (frequency) {
+    case "DAILY":
+      date.setDate(date.getDate() + 1);
+      break;
+    case "WEEKLY":
+      date.setDate(date.getDate() + 7);
+      break;
+    case "MONTHLY":
+      date.setMonth(date.getMonth() + 1);
+      break;
+    case "YEARLY":
+      date.setFullYear(date.getFullYear() + 1);
+      break;
+    default:
+      throw new Error(`Invalid frequency: ${frequency}`);
+  }
+
+  return date.getTime();
+}
 
 export const getTransactionsByUser = query({
   args: { userId: v.id("users") },

@@ -1,6 +1,5 @@
 # Budgify - Modern Personal Finance Dashboard
 
-
 Budgify is a comprehensive personal finance management application built with Next.js, offering real-time financial tracking, analytics, and visualization tools.
 
 ## ✨ Key Features
@@ -93,11 +92,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - **Recharts** - Interactive charts
 - **React Table** - Data tables
 
-### Testing
-
-- **Jest** - Unit testing
-- **Cypress** - E2E testing
-
 ## 📂 Project Structure
 
 ```
@@ -106,8 +100,7 @@ budgify/
 ├── components/        # Reusable components
 ├── lib/               # Utility functions
 ├── convex/            # Convex functions
-├── public/            # Static assets
-└── tests/             # Test files
+└── public/            # Static assets
 ```
 
 ## 🤝 Contributing
@@ -124,7 +117,6 @@ budgify/
 npm run dev       # Start development server
 npm run build     # Create production build
 npm run start     # Run production build
-npm run test      # Run tests
 npm run lint      # Run linter
 npm run format    # Format code
 ```

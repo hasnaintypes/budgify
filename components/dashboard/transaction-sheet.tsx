@@ -107,6 +107,16 @@ export function TransactionSheet() {
       return;
     }
 
+    // Validate recurring transaction fields
+    if (isRecurring && !frequency) {
+      toast({
+        title: "Missing frequency",
+        description: "Please select a frequency for recurring transactions",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Convert date to timestamp (milliseconds since epoch)
       const dateTimestamp = date ? date.getTime() : new Date().getTime();
@@ -119,7 +129,7 @@ export function TransactionSheet() {
         receiptUrl = "receipt-placeholder";
       }
 
-      await createTransaction({
+      const transactionArgs: any = {
         description,
         amount: Number.parseFloat(amount),
         type: transactionType,
@@ -138,7 +148,20 @@ export function TransactionSheet() {
         location: location || undefined,
         notes: notes || undefined,
         receipt: receiptUrl,
-      });
+      };
+
+      // Add recurring transaction fields if enabled
+      if (isRecurring && frequency) {
+        transactionArgs.isRecurring = true;
+        transactionArgs.frequency = frequency as
+          | "DAILY"
+          | "WEEKLY"
+          | "MONTHLY"
+          | "YEARLY";
+        // Note: endDate can be added later as an optional feature
+      }
+
+      await createTransaction(transactionArgs);
 
       // Reset form
       setDescription("");
@@ -153,8 +176,12 @@ export function TransactionSheet() {
       setFrequency(null);
 
       toast({
-        title: "Transaction created",
-        description: "Your transaction has been saved successfully",
+        title: isRecurring
+          ? "Recurring transaction created"
+          : "Transaction created",
+        description: isRecurring
+          ? "Your recurring transaction has been set up successfully"
+          : "Your transaction has been saved successfully",
       });
 
       setOpen(false);

@@ -4,6 +4,8 @@ import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { CategoryBreakdown } from "@/components/dashboard/category-breakdown";
 import { TransactionHistory } from "@/components/dashboard/transaction-history";
 import { AccountsSection } from "@/components/dashboard/accounts-section";
+import { UpcomingRecurringTransactions } from "@/components/dashboard/upcoming-recurring-transactions";
+
 export default function DashboardPage() {
   return (
     <div className="space-y-8">
@@ -13,7 +15,10 @@ export default function DashboardPage() {
         <RecentTransactions />
         <CategoryBreakdown />
       </div>
-      <AccountsSection />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <AccountsSection />
+        <UpcomingRecurringTransactions />
+      </div>
       <TransactionHistory />
     </div>
   );

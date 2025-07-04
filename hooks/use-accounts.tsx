@@ -5,8 +5,10 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
+// Updated Account type to match actual Convex data structure
 export type Account = {
-  id: Id<"accounts">;
+  _id: Id<"accounts">;
+  _creationTime: number;
   name: string;
   description: string;
   balance: number;
@@ -14,6 +16,18 @@ export type Account = {
   currency: string;
   color: string;
   icon: string;
+  userId: Id<"users">;
+  // Removed createdAt and updatedAt as they're not in the actual data
+};
+
+export type AccountFormData = {
+  name: string;
+  description?: string;
+  balance: number;
+  currency: string;
+  color: string;
+  icon: string;
+  isActive: boolean;
 };
 
 export function useAccounts() {
@@ -22,17 +36,16 @@ export function useAccounts() {
   const update = useMutation(api.accounts.update);
   const remove = useMutation(api.accounts.remove);
 
-  const addAccount = async (
-    account: Omit<Account, "id" | "createdAt" | "updatedAt">
-  ) => {
+  const addAccount = async (account: AccountFormData) => {
     try {
       const newAccount = await create({
         name: account.name,
-        description: account.description,
+        description: account.description || "",
         balance: account.balance,
         currency: account.currency,
         color: account.color,
         icon: account.icon,
+        isActive: account.isActive,
       });
       return newAccount;
     } catch (error) {
@@ -42,7 +55,7 @@ export function useAccounts() {
 
   const updateAccount = async (
     id: Id<"accounts">,
-    updates: Partial<Account>
+    updates: Partial<AccountFormData>
   ) => {
     try {
       await update({
@@ -66,6 +79,19 @@ export function useAccounts() {
 
   const setActiveAccount = async (id: Id<"accounts">) => {
     try {
+      // First, set all accounts to inactive
+      if (accounts) {
+        for (const account of accounts) {
+          if (account.isActive && account._id !== id) {
+            await update({
+              id: account._id,
+              isActive: false,
+            });
+          }
+        }
+      }
+
+      // Then set the selected account to active
       await update({
         id,
         isActive: true,
@@ -76,19 +102,7 @@ export function useAccounts() {
   };
 
   return {
-    accounts:
-      accounts === undefined
-        ? []
-        : (accounts.map((account) => ({
-            id: account._id,
-            name: account.name,
-            description: account.description,
-            balance: account.balance,
-            isActive: account.isActive || false,
-            currency: account.currency,
-            color: account.color,
-            icon: account.icon,
-          })) as Account[]),
+    accounts: accounts || [],
     isLoading: accounts === undefined,
     addAccount,
     updateAccount,
